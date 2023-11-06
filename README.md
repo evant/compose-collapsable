@@ -3,6 +3,12 @@
 A generic collapsable implementation with dragging and nested scrolling support. This extracts and
 builds upon logic from the compose material 3 top app bar implementation.
 
+## Download
+
+```kotlin
+implementation("me.tatarka.compose.collapsable:compose-collapsable:0.1.0")
+```
+
 ## Usage
 
 This library is made up of a few main parts that you can pick-and-choose for your own collapsing ui
