@@ -2,6 +2,7 @@ plugins {
     id("com.android.library")
     id("org.jetbrains.kotlin.android")
     `maven-publish`
+    `signing`
 }
 
 android {
@@ -57,11 +58,44 @@ publishing {
         register<MavenPublication>("release") {
             groupId = "me.tatarka.compose.collapsable"
             artifactId = "compose-collapsable"
-            version = "0.1"
+            version = "0.1-SNAPSHOT"
 
             afterEvaluate {
                 from(components["release"])
             }
+
+            pom {
+                name.set("compose-collapsable")
+                description.set(" A generic collapsable implementation with dragging and nested scrolling support")
+                url.set("https://github.com/evant/compose-collapsable")
+                licenses {
+                    license {
+                        name.set("The Apache License, Version 2.0")
+                        url.set("http://www.apache.org/licenses/LICENSE-2.0.txt")
+                    }
+                }
+                developers {
+                    developer {
+                        id.set("evant")
+                        name.set("Eva Tatarka")
+                    }
+                }
+                scm {
+                    connection.set("https://github.com/evant/compose-collapsable.git")
+                    developerConnection.set("https://github.com/evant/compose-collapsable.git")
+                    url.set("https://github.com/evant/compose-collapsable")
+                }
+            }
         }
+    }
+}
+
+signing {
+    setRequired {
+        findProperty("signing.keyId") != null
+    }
+
+    publishing.publications.all {
+        sign(this)
     }
 }
