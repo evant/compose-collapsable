@@ -18,6 +18,39 @@ import kotlin.math.roundToInt
 
 /**
  * A Column where some of the children may collapse. Add [Modifier.collapse] to the children that
+ * should collapse. Responds to drags and nested scrolling using [Modifier.draggable].
+ *
+ * example:
+ * ```
+ * val behavior = rememberCollapsableBehavior()
+ * Column(modifier = Modifier.nestedScroll(behavior.nestedScrollConnection)) {
+ *   CollapsableColumn(behavior = behavior) {
+ *     TopAppBar(modifier = Modifier.collapse(), title = { Title("Title") })
+ *     TabRow { ... }
+ *   }
+ *   LazyColumn { ... }
+ * }
+ * ```
+ *
+ * @param modifier modifiers to be applied to the layout
+ * @param state the state to manage collapsing the content
+ * @param content the content of the column
+ **/
+@Composable
+fun CollapsableColumn(
+    modifier: Modifier = Modifier,
+    behavior: CollapsableBehavior = rememberCollapsableBehavior(),
+    content: @Composable CollapsableColumnScope.() -> Unit
+) {
+    CollapsableColumn(
+        state = behavior.state,
+        modifier = modifier.draggable(behavior),
+        content = content,
+    )
+}
+
+/**
+ * A Column where some of the children may collapse. Add [Modifier.collapse] to the children that
  * should collapse.
  *
  * example:
@@ -29,28 +62,13 @@ import kotlin.math.roundToInt
  * ```
  *
  * @param modifier modifiers to be applied to the layout
- * @param behavior the collapsable behavior
- * @param canDrag if dragging on the view itself expands or collapses it. Defaults to true
+ * @param state the state to manage collapsing the content
  * @param content the content of the column
- */
+ **/
 @Composable
 fun CollapsableColumn(
     modifier: Modifier = Modifier,
-    behavior: CollapsableBehavior = rememberCollapsableBehavior(),
-    canDrag: Boolean = true,
-    content: @Composable CollapsableColumnScope.() -> Unit
-) {
-    CollapsableColumnContent(
-        state = behavior.state,
-        modifier = modifier.run { if (canDrag) draggable(behavior) else this },
-        content = content,
-    )
-}
-
-@Composable
-private fun CollapsableColumnContent(
-    state: CollapsableState,
-    modifier: Modifier = Modifier,
+    state: CollapsableState = rememberCollapsableState(),
     content: @Composable CollapsableColumnScope.() -> Unit
 ) {
     Layout(

@@ -15,25 +15,17 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.unit.dp
-import me.tatarka.compose.collapsable.CollapsableBehavior
 
 @Composable
 fun Page(
-    collapsableBehavior: CollapsableBehavior,
     topBar: @Composable () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Scaffold(topBar = topBar, modifier = modifier) { padding ->
         LazyColumn(
             contentPadding = padding,
-            modifier = Modifier
-                .fillMaxSize()
-                .nestedScroll(
-                    collapsableBehavior.nestedScrollConnection,
-                    collapsableBehavior.nestedScrollDispatcher
-                )
+            modifier = Modifier.fillMaxSize()
         ) {
             items(30) { i ->
                 Text(

@@ -9,6 +9,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.surfaceColorAtElevation
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.layout.layoutId
 import androidx.compose.ui.tooling.preview.Preview
@@ -128,7 +129,7 @@ fun CustomLayoutTopAppBarPreview() {
     CollapsableTheme {
         val collapsableBehavior = rememberCollapsableBehavior()
         Page(
-            collapsableBehavior = collapsableBehavior,
+            modifier = Modifier.nestedScroll(collapsableBehavior.nestedScrollConnection),
             topBar = { CustomLayoutTopAppBar(collapsableBehavior, onNavigateBack = {}) }
         )
     }

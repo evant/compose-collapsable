@@ -20,6 +20,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.tooling.preview.Preview
 import me.tatarka.android.collapsable.ui.theme.CollapsableTheme
@@ -47,7 +48,7 @@ class MainActivity : ComponentActivity() {
                     Examples.PinnedTabs -> {
                         val collapsableBehavior = rememberCollapsableBehavior()
                         Page(
-                            collapsableBehavior = collapsableBehavior,
+                            modifier = Modifier.nestedScroll(collapsableBehavior.nestedScrollConnection),
                             topBar = {
                                 PinnedTabsTopAppBar(
                                     collapsableBehavior = collapsableBehavior,
@@ -65,7 +66,7 @@ class MainActivity : ComponentActivity() {
                             rememberCollapsableState(offsetLimit)
                         )
                         Page(
-                            collapsableBehavior = collapsableBehavior,
+                            modifier = Modifier.nestedScroll(collapsableBehavior.nestedScrollConnection),
                             topBar = {
                                 ParallaxBackgroundTopAppBar(
                                     collapsableBehavior = collapsableBehavior,
@@ -78,7 +79,7 @@ class MainActivity : ComponentActivity() {
                     Examples.CustomLayout -> {
                         val collapsableBehavior = rememberCollapsableBehavior()
                         Page(
-                            collapsableBehavior = collapsableBehavior,
+                            modifier = Modifier.nestedScroll(collapsableBehavior.nestedScrollConnection),
                             topBar = {
                                 CustomLayoutTopAppBar(
                                     collapsableBehavior = collapsableBehavior,

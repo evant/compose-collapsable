@@ -11,10 +11,12 @@ import androidx.compose.animation.rememberSplineBasedDecay
 import androidx.compose.foundation.gestures.Orientation
 import androidx.compose.foundation.gestures.draggable
 import androidx.compose.foundation.gestures.rememberDraggableState
+import androidx.compose.foundation.gestures.scrollable
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.Saver
 import androidx.compose.runtime.saveable.listSaver
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -25,6 +27,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
 import androidx.compose.ui.input.nestedscroll.NestedScrollDispatcher
 import androidx.compose.ui.input.nestedscroll.NestedScrollSource
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.unit.Velocity
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.coroutineScope
@@ -152,12 +155,6 @@ class CollapsableBehavior(
     private val flingAnimationSpec: DecayAnimationSpec<Float>?,
 ) {
     /**
-     * Pass this dispatcher to [Modifier.nestedScroll] to have it respond to drags on this view.
-     * This will only have an effect if the behavior is attached to the view with [Modifier.draggable].
-     */
-    val nestedScrollDispatcher = NestedScrollDispatcher()
-
-    /**
      * Pass this connection to [Modifier.nestedScroll] to response to nested scrolling events.
      */
     val nestedScrollConnection = object : NestedScrollConnection {
@@ -258,85 +255,7 @@ class CollapsableBehavior(
         return velocity - remainingVelocity
     }
 
-    /**
-     * Drags the view collapsing or expanding it. Will dispatch drags if nested scrolling is
-     * connected.
-     */
-    fun drag(delta: Float) {
-        val deltaOffset = Offset(x = 0f, y = delta)
-        val preScrollConsumed = nestedScrollDispatcher.dispatchPreScroll(
-            available = deltaOffset,
-            source = NestedScrollSource.Drag,
-        )
-        val onPreScrollConsumed = nestedScrollConnection.onPreScroll(
-            available = deltaOffset - preScrollConsumed,
-            source = NestedScrollSource.Drag,
-        )
-        val onPostScrollConsumed = nestedScrollConnection.onPostScroll(
-            consumed = Offset.Zero,
-            available = deltaOffset - onPreScrollConsumed,
-            source = NestedScrollSource.Drag,
-        )
-        nestedScrollDispatcher.dispatchPostScroll(
-            consumed = onPostScrollConsumed,
-            available = deltaOffset - onPostScrollConsumed,
-            source = NestedScrollSource.Drag,
-        )
-    }
 
-    /**
-     * Flings the view collapsing or expanding it. Will dispatch flings if nested scrolling is
-     * connected.
-     */
-    suspend fun fling(velocity: Float) {
-        val velocityV = Velocity(x = 0f, y = velocity)
-        val preFlingConsumed = nestedScrollDispatcher.dispatchPreFling(available = velocityV)
-        val onPreFlingConsumed = nestedScrollConnection.onPreFling(
-            available = velocityV - preFlingConsumed
-        )
-        val onPostFlingConsumed = nestedScrollConnection.onPostFling(
-            consumed = Velocity.Zero,
-            available = velocityV - onPreFlingConsumed
-        )
-        nestedScrollDispatcher.dispatchPostFling(
-            consumed = onPostFlingConsumed,
-            available = velocityV - onPostFlingConsumed
-        )
-    }
-
-    private var animationJob: Job? = null
-
-    /**
-     * Collapses the view with the provided [AnimationSpec]. This will not dispatch nested scrolls.
-     */
-    suspend fun collapse(
-        animationSpec: AnimationSpec<Float> = spring(stiffness = Spring.StiffnessMediumLow)
-    ) {
-        animationJob?.cancel()
-        animationJob = coroutineScope {
-            launch {
-                AnimationState(initialValue = state.heightOffset).animateTo(
-                    state.heightOffsetLimit,
-                    animationSpec = animationSpec
-                ) { state.heightOffset = value }
-            }
-        }
-    }
-
-    /**
-     * Expands the view with the provided [AnimationSpec]. This will not dispatch nested scrolls.
-     */
-    suspend fun expand(animationSpec: AnimationSpec<Float> = spring(stiffness = Spring.StiffnessMediumLow)) {
-        animationJob?.cancel()
-        animationJob = coroutineScope {
-            launch {
-                AnimationState(initialValue = state.heightOffset).animateTo(
-                    0f,
-                    animationSpec = animationSpec
-                ) { state.heightOffset = value }
-            }
-        }
-    }
 }
 
 /**
@@ -370,10 +289,53 @@ fun rememberCollapsableBehavior(
  */
 fun Modifier.draggable(behavior: CollapsableBehavior, enabled: Boolean = true): Modifier =
     composed {
+        val dragLogic = remember { DragLogic(behavior.nestedScrollConnection) }
         draggable(
-            rememberDraggableState(onDelta = { behavior.drag(it) }),
-            onDragStopped = { behavior.fling(it) },
+            rememberDraggableState(onDelta = { dragLogic.drag(it) }),
+            onDragStopped = { dragLogic.fling(it) },
             orientation = Orientation.Vertical,
             enabled = enabled,
+        ).nestedScroll(behavior.nestedScrollConnection, dragLogic.dispatcher)
+    }
+
+private class DragLogic(private val connection: NestedScrollConnection) {
+    val dispatcher: NestedScrollDispatcher = NestedScrollDispatcher()
+
+    fun drag(delta: Float) {
+        val deltaOffset = Offset(x = 0f, y = delta)
+        val preScrollConsumed = dispatcher.dispatchPreScroll(
+            available = deltaOffset,
+            source = NestedScrollSource.Drag,
+        )
+        val onPreScrollConsumed = connection.onPreScroll(
+            available = deltaOffset - preScrollConsumed,
+            source = NestedScrollSource.Drag,
+        )
+        val onPostScrollConsumed = connection.onPostScroll(
+            consumed = Offset.Zero,
+            available = deltaOffset - onPreScrollConsumed,
+            source = NestedScrollSource.Drag,
+        )
+        dispatcher.dispatchPostScroll(
+            consumed = onPostScrollConsumed,
+            available = deltaOffset - onPostScrollConsumed,
+            source = NestedScrollSource.Drag,
         )
     }
+
+    suspend fun fling(velocity: Float) {
+        val velocityV = Velocity(x = 0f, y = velocity)
+        val preFlingConsumed = dispatcher.dispatchPreFling(available = velocityV)
+        val onPreFlingConsumed = connection.onPreFling(
+            available = velocityV - preFlingConsumed
+        )
+        val onPostFlingConsumed = connection.onPostFling(
+            consumed = Velocity.Zero,
+            available = velocityV - onPreFlingConsumed
+        )
+        dispatcher.dispatchPostFling(
+            consumed = onPostFlingConsumed,
+            available = velocityV - onPostFlingConsumed
+        )
+    }
+}

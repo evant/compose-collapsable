@@ -17,6 +17,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.layout.layoutId
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.lerp
@@ -56,8 +57,8 @@ fun ParallaxBackgroundTopAppBar(
         onNavigateBack = onNavigateBack,
         modifier = modifier
             .fillMaxWidth()
-            .draggable(collapsableBehavior)
             .background(MaterialTheme.colorScheme.surfaceColorAtElevation(3.dp))
+            .draggable(collapsableBehavior)
     )
 }
 
@@ -170,7 +171,7 @@ fun ParallaxBackgroundTopAppBarPreview() {
             rememberCollapsableState(offsetLimit)
         )
         Page(
-            collapsableBehavior = collapsableBehavior,
+            modifier = Modifier.nestedScroll(collapsableBehavior.nestedScrollConnection),
             topBar = { ParallaxBackgroundTopAppBar(collapsableBehavior, onNavigateBack = {}) }
         )
     }

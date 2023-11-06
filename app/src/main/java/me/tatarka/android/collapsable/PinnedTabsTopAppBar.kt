@@ -14,6 +14,7 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import me.tatarka.android.collapsable.ui.theme.CollapsableTheme
@@ -59,7 +60,7 @@ fun PinnedTabsTopAppBarPreview() {
     CollapsableTheme {
         val collapsableBehavior = rememberCollapsableBehavior()
         Page(
-            collapsableBehavior = collapsableBehavior,
+            modifier = Modifier.nestedScroll(collapsableBehavior.nestedScrollConnection),
             topBar = { PinnedTabsTopAppBar(collapsableBehavior, onNavigateBack = {}) }
         )
     }
