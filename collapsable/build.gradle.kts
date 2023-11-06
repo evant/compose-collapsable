@@ -56,9 +56,9 @@ dependencies {
 publishing {
     publications {
         register<MavenPublication>("release") {
-            groupId = "me.tatarka.compose.collapsable"
+            groupId = rootProject.group.toString()
+            version = rootProject.version.toString()
             artifactId = "compose-collapsable"
-            version = "0.1-SNAPSHOT"
 
             afterEvaluate {
                 from(components["release"])

@@ -6,6 +6,9 @@ plugins {
     id("io.github.gradle-nexus.publish-plugin") version "1.1.0"
 }
 
+group = "me.tatarka.compose.collapsable"
+version = "0.1.0-SNAPSHOT"
+
 nexusPublishing {
     repositories {
         sonatype()
