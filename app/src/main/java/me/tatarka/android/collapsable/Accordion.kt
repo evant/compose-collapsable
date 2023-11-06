@@ -33,7 +33,7 @@ import me.tatarka.compose.collapsable.CollapsableState
 import me.tatarka.compose.collapsable.rememberCollapsableState
 
 @Stable
-class AccordianState(val collapsableState: CollapsableState) {
+class AccordionState(val collapsableState: CollapsableState) {
 
     private var animationJob: Job? = null
 
@@ -72,15 +72,15 @@ class AccordianState(val collapsableState: CollapsableState) {
 }
 
 @Composable
-fun rememberAccordianState(): AccordianState {
+fun rememberAccordionState(): AccordionState {
     val collapsableState = rememberCollapsableState()
-    return remember { AccordianState(collapsableState) }
+    return remember { AccordionState(collapsableState) }
 }
 
 @Composable
-fun Accordian(modifier: Modifier = Modifier) {
+fun Accordion(modifier: Modifier = Modifier) {
     val scope = rememberCoroutineScope()
-    val state = rememberAccordianState()
+    val state = rememberAccordionState()
     CollapsableColumn(modifier = modifier, state = state.collapsableState) {
         Row(
             horizontalArrangement = Arrangement.SpaceBetween,
@@ -118,8 +118,8 @@ fun Accordian(modifier: Modifier = Modifier) {
 
 @Preview
 @Composable
-fun AccordianPreview() {
+fun AccordionPreview() {
     Surface {
-        Accordian(modifier = Modifier.fillMaxWidth())
+        Accordion(modifier = Modifier.fillMaxWidth())
     }
 }

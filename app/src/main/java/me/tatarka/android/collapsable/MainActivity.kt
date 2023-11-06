@@ -28,7 +28,7 @@ import me.tatarka.compose.collapsable.rememberCollapsableBehavior
 import me.tatarka.compose.collapsable.rememberCollapsableState
 
 enum class Examples {
-    PinnedTabs, MotionLayout, CustomLayout, Accordian
+    PinnedTabs, MotionLayout, CustomLayout, Accordion
 }
 
 class MainActivity : ComponentActivity() {
@@ -89,10 +89,10 @@ class MainActivity : ComponentActivity() {
                         )
                     }
 
-                    Examples.Accordian -> {
+                    Examples.Accordion -> {
                         Column(modifier = Modifier.systemBarsPadding()) {
                             NavigateBackButton(onClick = { currentExample = null })
-                            Accordian(modifier = Modifier.fillMaxWidth())
+                            Accordion(modifier = Modifier.fillMaxWidth())
                         }
                     }
                 }
@@ -117,8 +117,8 @@ fun MainPage(
         TextButton(onClick = { onSelectExample(Examples.CustomLayout) }) {
             Text("Custom Layout")
         }
-        TextButton(onClick = { onSelectExample(Examples.Accordian) }) {
-            Text("Accordian")
+        TextButton(onClick = { onSelectExample(Examples.Accordion) }) {
+            Text("Accordion")
         }
     }
 }
