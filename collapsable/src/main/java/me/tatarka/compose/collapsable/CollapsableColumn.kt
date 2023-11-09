@@ -40,10 +40,12 @@ import kotlin.math.roundToInt
 fun CollapsableColumn(
     modifier: Modifier = Modifier,
     behavior: CollapsableBehavior = rememberCollapsableBehavior(),
+    clip: Boolean = true,
     content: @Composable CollapsableColumnScope.() -> Unit
 ) {
     CollapsableColumn(
         state = behavior.state,
+        clip = clip,
         modifier = modifier.draggable(behavior),
         content = content,
     )
@@ -69,11 +71,13 @@ fun CollapsableColumn(
 fun CollapsableColumn(
     modifier: Modifier = Modifier,
     state: CollapsableState = rememberCollapsableState(),
+    clip: Boolean = true,
     content: @Composable CollapsableColumnScope.() -> Unit
 ) {
     Layout(
         content = { CollapsableColumnScopeInstance.content() },
-        modifier = modifier.clipScrollableContainer(Orientation.Vertical),
+        modifier = modifier
+            .then(if (clip) Modifier.clipScrollableContainer(Orientation.Vertical) else Modifier),
         measurePolicy = { measureables, constraints ->
             var currentConstraints = constraints.copy(minHeight = 0)
             val placeables = ArrayList<Placeable>(measureables.size)
