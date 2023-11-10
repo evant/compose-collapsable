@@ -12,6 +12,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
   outside it's bounds as well as not have the children overlap other views when you collapse. You
   can disable this clipping for a specific child with `Modifier.collapse(clip = false)`.
 
+### Fixed
+- Fixed CollapsableColumn child placement on more complex cases of collapsable and non-collapsable
+  children.
+
 ## [0.1.0] 2023-11-05
 
 ### Added
