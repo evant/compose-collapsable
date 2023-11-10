@@ -85,9 +85,7 @@ fun Accordion(modifier: Modifier = Modifier) {
         Row(
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier
-                .background(MaterialTheme.colorScheme.surface)
-                .padding(start = 16.dp)
+            modifier = Modifier.padding(start = 16.dp)
         ) {
             ProvideTextStyle(MaterialTheme.typography.titleLarge) {
                 Text("Title")
