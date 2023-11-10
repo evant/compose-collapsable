@@ -7,7 +7,7 @@ plugins {
 }
 
 group = "me.tatarka.compose.collapsable"
-version = "0.1.0"
+version = "0.2.0-SNAPSHOT"
 
 nexusPublishing {
     repositories {
