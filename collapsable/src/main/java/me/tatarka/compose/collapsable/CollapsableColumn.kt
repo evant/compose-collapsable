@@ -1,17 +1,20 @@
 package me.tatarka.compose.collapsable
 
-import androidx.compose.foundation.clipScrollableContainer
-import androidx.compose.foundation.gestures.Orientation
 import androidx.compose.foundation.layout.LayoutScopeMarker
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.Stable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Rect
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.Outline
+import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.layout.ParentDataModifier
 import androidx.compose.ui.layout.Placeable
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.isSpecified
 import kotlin.math.roundToInt
@@ -73,7 +76,7 @@ fun CollapsableColumn(
 ) {
     Layout(
         content = { CollapsableColumnScopeInstance.content() },
-        modifier = modifier.clipScrollableContainer(Orientation.Vertical),
+        modifier = modifier,
         measurePolicy = { measureables, constraints ->
             var currentConstraints = constraints.copy(minHeight = 0)
             val placeables = ArrayList<Placeable>(measureables.size)
@@ -123,19 +126,70 @@ fun CollapsableColumn(
                 height = expandedHeight + state.heightOffset.roundToInt()
             ) {
                 var y = 0
+                var clipStart = -1
                 for (placeable in placeables) {
+                    val collapse = placeable.parentData as? CollapseChild
                     var offset = y + state.heightOffset
-                    var zIndex = 0f
-                    if (placeable.parentData !is CollapseChild) {
+
+                    if (collapse != null) {
+                        if (clipStart == -1) {
+                            clipStart = y
+                        }
+                    } else {
                         offset = offset.coerceAtLeast(0f)
-                        zIndex = 1f
                     }
-                    placeable.place(x = 0, y = offset.roundToInt(), zIndex = zIndex)
+
+                    val clipShape = if (collapse?.clip == true) {
+                        VerticalClipShape(y - clipStart + state.heightOffset)
+                    } else {
+                        null
+                    }
+
+                    placeable.placeWithLayer(x = 0, y = offset.roundToInt()) {
+                        if (clipShape != null) {
+                            clip = true
+                            shape = clipShape
+                        }
+                    }
+
                     y += placeable.height
                 }
             }
         }
     )
+}
+
+private val MaxSupportedElevation = 30.dp
+
+private class VerticalClipShape(val offset: Float) : Shape {
+    override fun createOutline(
+        size: Size,
+        layoutDirection: LayoutDirection,
+        density: Density
+    ): Outline {
+        val inflateSize = with(density) { MaxSupportedElevation.roundToPx().toFloat() }
+        return Outline.Rectangle(
+            Rect(
+                left = -inflateSize,
+                top = -offset,
+                right = size.width + inflateSize,
+                bottom = size.height
+            )
+        )
+    }
+
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (other !is VerticalClipShape) return false
+
+        if (offset != other.offset) return false
+
+        return true
+    }
+
+    override fun hashCode(): Int {
+        return offset.hashCode()
+    }
 }
 
 @Immutable
@@ -152,18 +206,28 @@ interface CollapsableColumnScope {
      *
      * You can optionally pass in an expanded and collapsed height to transition to. Otherwise it'll
      * collapse from it's default size to 0.
+     *
+     * @param collapsed the size of the child when it's completely collapsed, defaults to 0
+     * @param expanded the size of the child when it's completely expanded, defaults to it's
+     * measured size
+     * @param clip if the child should be clipped when it collapses to it's original bounds,
+     * defaults to true
      */
     @Stable
-    fun Modifier.collapse(collapsed: Dp = 0.dp, expanded: Dp = Default): Modifier
+    fun Modifier.collapse(
+        collapsed: Dp = 0.dp,
+        expanded: Dp = Default,
+        clip: Boolean = true,
+    ): Modifier
 }
 
-private data class CollapseChild(val collapsedHeight: Dp, val expandedHeight: Dp)
+private data class CollapseChild(val collapsedHeight: Dp, val expandedHeight: Dp, val clip: Boolean)
 
 private class ChildBehaviorModifier(private val collapse: CollapseChild) : ParentDataModifier {
     override fun Density.modifyParentData(parentData: Any?) = collapse
 }
 
 private object CollapsableColumnScopeInstance : CollapsableColumnScope {
-    override fun Modifier.collapse(collapsed: Dp, expanded: Dp): Modifier =
-        then(ChildBehaviorModifier(CollapseChild(collapsed, expanded)))
+    override fun Modifier.collapse(collapsed: Dp, expanded: Dp, clip: Boolean): Modifier =
+        then(ChildBehaviorModifier(CollapseChild(collapsed, expanded, clip)))
 }
