@@ -18,14 +18,13 @@ import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import me.tatarka.android.collapsable.ui.theme.CollapsableTheme
-import me.tatarka.compose.collapsable.CollapsableBehavior
 import me.tatarka.compose.collapsable.CollapsableColumn
-import me.tatarka.compose.collapsable.rememberCollapsableBehavior
-
+import me.tatarka.compose.collapsable.CollapsableTopBehavior
+import me.tatarka.compose.collapsable.rememberCollapsableTopBehavior
 
 @Composable
 fun ComplexCollapsableColumn(
-    collapsableBehavior: CollapsableBehavior,
+    collapsableBehavior: CollapsableTopBehavior,
     onNavigateBack: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -98,7 +97,7 @@ fun ComplexCollapsableColumn(
 @Composable
 fun ComplexCollapsableColumnPreview() {
     CollapsableTheme {
-        val collapsableBehavior = rememberCollapsableBehavior()
+        val collapsableBehavior = rememberCollapsableTopBehavior()
         Page(
             modifier = Modifier.nestedScroll(collapsableBehavior.nestedScrollConnection),
             topBar = { ComplexCollapsableColumn(collapsableBehavior, onNavigateBack = {}) }

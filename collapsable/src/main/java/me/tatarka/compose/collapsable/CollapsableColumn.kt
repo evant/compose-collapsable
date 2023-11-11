@@ -21,11 +21,12 @@ import kotlin.math.roundToInt
 
 /**
  * A Column where some of the children may collapse. Add [Modifier.collapse] to the children that
- * should collapse. Responds to drags and nested scrolling using [Modifier.draggable].
+ * should collapse. Takes a [CollapsableTopBehavior] directly to respond to nested scrolls and
+ * drags.
  *
  * example:
  * ```
- * val behavior = rememberCollapsableBehavior()
+ * val behavior = rememberCollapsableTopBehavior()
  * Column(modifier = Modifier.nestedScroll(behavior.nestedScrollConnection)) {
  *   CollapsableColumn(behavior = behavior) {
  *     TopAppBar(modifier = Modifier.collapse(), title = { Title("Title") })
@@ -36,13 +37,13 @@ import kotlin.math.roundToInt
  * ```
  *
  * @param modifier modifiers to be applied to the layout
- * @param state the state to manage collapsing the content
+ * @param behavior the behavior for nested scrolling and drags
  * @param content the content of the column
  **/
 @Composable
 fun CollapsableColumn(
+    behavior: CollapsableTopBehavior,
     modifier: Modifier = Modifier,
-    behavior: CollapsableBehavior = rememberCollapsableBehavior(),
     content: @Composable CollapsableColumnScope.() -> Unit
 ) {
     CollapsableColumn(

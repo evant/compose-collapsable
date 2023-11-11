@@ -1,18 +1,3 @@
-/*
- * Copyright 2021 The Android Open Source Project
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
 package me.tatarka.compose.collapsable
 
 import androidx.compose.animation.core.AnimationSpec
@@ -28,13 +13,7 @@ import androidx.compose.foundation.gestures.draggable
 import androidx.compose.foundation.gestures.rememberDraggableState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Stable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.saveable.Saver
-import androidx.compose.runtime.saveable.listSaver
-import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.composed
 import androidx.compose.ui.geometry.Offset
@@ -45,109 +24,11 @@ import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.unit.Velocity
 import kotlin.math.abs
 
-/**
- * A state object that can be hoisted to control and observe the collapsable state. The state is
- * read and updated by [CollapsableBehavior].
- *
- * In most cases, this state will be created via [rememberCollapsableState].
- *
- * To update your view from this state you should do two things:
- * 1. Set [heightOffsetLimit] either by passing in the initial value ahead of time or calculating
- * it on layout.
- * 2. Read [heightOffset] and [collapsedFraction] to update your ui based on how far it has
- * collapsed.
- *
- * You can also optionally apply [Modifier.draggable] to allow dragging on the view itself to
- * expand and collapse it.
- *
- * @param initialHeightOffsetLimit the initial value for [heightOffsetLimit]
- * @param initialHeightOffset the initial value for [heightOffset]
- */
-@Stable
-class CollapsableState(
-    initialHeightOffsetLimit: Float,
-    initialHeightOffset: Float,
-) {
-    /**
-     * The height offset limit in pixels, which represents the limit it is allowed to collapse to.
-     * Note: This value is typically negative, where 0 means no collapsing will take place and a
-     * negative value will be the distance it will collapse.
-     *
-     * Use this limit to coerce the [heightOffset] value when it's updated.
-     */
-    var heightOffsetLimit by mutableFloatStateOf(initialHeightOffsetLimit)
-
-    private var _heightOffset = mutableFloatStateOf(initialHeightOffset)
-
-    /**
-     * The current height offset in pixels. This height offset is applied to the fixed
-     * height to control the displayed height when content is being scrolled.
-     *
-     * Updates to the [heightOffset] value are coerced between zero and [heightOffsetLimit].
-     */
-    var heightOffset: Float
-        get() = _heightOffset.floatValue
-        set(newOffset) {
-            _heightOffset.floatValue = newOffset.coerceIn(
-                minimumValue = heightOffsetLimit,
-                maximumValue = 0f
-            )
-        }
-
-    /**
-     * A value that represents the collapsed height percentage.
-     *
-     * A `0.0` represents fully expanded, and `1.0` represents fully collapsed (computed * as
-     * [heightOffset] / [heightOffsetLimit]).
-     */
-    val collapsedFraction: Float
-        get() = if (heightOffsetLimit != 0f) {
-            heightOffset / heightOffsetLimit
-        } else {
-            0f
-        }
-
-    companion object {
-        /**
-         * The default [Saver] implementation for [CollapsableState].
-         */
-        val Saver: Saver<CollapsableState, *> = listSaver(
-            save = { listOf(it.heightOffsetLimit, it.heightOffset) },
-            restore = {
-                CollapsableState(
-                    initialHeightOffsetLimit = it[0],
-                    initialHeightOffset = it[1],
-                )
-            }
-        )
-    }
-}
-
-/**
- * Remembers a [CollapsableState].
- */
-@Composable
-fun rememberCollapsableState(): CollapsableState {
-    return rememberSaveable(saver = CollapsableState.Saver) {
-        CollapsableState(initialHeightOffset = 0f, initialHeightOffsetLimit = 0f)
-    }
-}
-
-/**
- * Remembers a [CollapsableState].
- *
- * @param initialHeightOffsetLimit the initial [CollapsableState.heightOffsetLimit] in pixels. This
- * is useful for cases where it is know ahead of time instead of calculated on layout.
- */
-@Composable
-fun rememberCollapsableState(initialHeightOffsetLimit: Float = 0f): CollapsableState {
-    return rememberSaveable(saver = CollapsableState.Saver) {
-        CollapsableState(
-            initialHeightOffset = 0f,
-            initialHeightOffsetLimit = initialHeightOffsetLimit
-        )
-    }
-}
+@Deprecated(
+    "renamed to CollapsableTopBehavior",
+    replaceWith = ReplaceWith("CollapsableTopBehavior")
+)
+typealias CollapsableBehavior = CollapsableTopBehavior
 
 /**
  * Drives the [CollapsableState] with dragging or nested scrolling.
@@ -160,10 +41,11 @@ fun rememberCollapsableState(initialHeightOffsetLimit: Float = 0f): CollapsableS
  * Enabled by default, passing null will disable reacting to flings.
  */
 @Stable
-class CollapsableBehavior(
+class CollapsableTopBehavior(
     val state: CollapsableState,
     private val snapAnimationSpec: AnimationSpec<Float>?,
     private val flingAnimationSpec: DecayAnimationSpec<Float>?,
+    private val enterAlways: Boolean = false,
 ) {
     /**
      * Pass this connection to [Modifier.nestedScroll] to response to nested scrolling events.
@@ -171,7 +53,7 @@ class CollapsableBehavior(
     val nestedScrollConnection = object : NestedScrollConnection {
         override fun onPreScroll(available: Offset, source: NestedScrollSource): Offset {
             // Don't intercept if scrolling down.
-            if (available.y > 0f) return Offset.Zero
+            if (!enterAlways && available.y > 0f) return Offset.Zero
 
             val prevHeightOffset = state.heightOffset
             state.heightOffset += available.y
@@ -189,19 +71,23 @@ class CollapsableBehavior(
             available: Offset,
             source: NestedScrollSource
         ): Offset {
-            if (available.y < 0f || consumed.y < 0f) {
-                // When scrolling up, just update the state's height offset.
-                val oldHeightOffset = state.heightOffset
+            if (enterAlways) {
                 state.heightOffset += consumed.y
-                return Offset(0f, state.heightOffset - oldHeightOffset)
-            }
+            } else {
+                if (available.y < 0f || consumed.y < 0f) {
+                    // When scrolling up, just update the state's height offset.
+                    val oldHeightOffset = state.heightOffset
+                    state.heightOffset += consumed.y
+                    return Offset(0f, state.heightOffset - oldHeightOffset)
+                }
 
-            if (available.y > 0f) {
-                // Adjust the height offset in case the consumed delta Y is less than what was
-                // recorded as available delta Y in the pre-scroll.
-                val oldHeightOffset = state.heightOffset
-                state.heightOffset += available.y
-                return Offset(0f, state.heightOffset - oldHeightOffset)
+                if (available.y > 0f) {
+                    // Adjust the height offset in case the consumed delta Y is less than what was
+                    // recorded as available delta Y in the pre-scroll.
+                    val oldHeightOffset = state.heightOffset
+                    state.heightOffset += available.y
+                    return Offset(0f, state.heightOffset - oldHeightOffset)
+                }
             }
             return Offset.Zero
         }
@@ -270,7 +156,7 @@ class CollapsableBehavior(
 }
 
 /**
- * Remembers a [CollapsableBehavior] that can be used to control collapsing. You should use
+ * Remembers a [CollapsableTopBehavior] that can be used to control collapsing. You should use
  *
  * @param state the [CollapsableState]
  * @param snapAnimationSpec animates snapping to the collapsed or expanded state at the end of a
@@ -280,25 +166,52 @@ class CollapsableBehavior(
  * Enabled by default, passing null will disable reacting to flings.
  */
 @Composable
+@Deprecated(
+    "renamed to rememberCollapsableTopBehavior",
+    replaceWith = ReplaceWith("rememberCollapsableTopBehavior(state = state, snapAnimationSpec = snapAnimationSpec, flingAnimationSpec = flingAnimationSpec)")
+)
 fun rememberCollapsableBehavior(
     state: CollapsableState = rememberCollapsableState(),
     snapAnimationSpec: AnimationSpec<Float>? = spring(stiffness = Spring.StiffnessMediumLow),
     flingAnimationSpec: DecayAnimationSpec<Float>? = rememberSplineBasedDecay()
-): CollapsableBehavior {
-    return CollapsableBehavior(
+): CollapsableTopBehavior {
+    return rememberCollapsableTopBehavior(state, snapAnimationSpec, flingAnimationSpec)
+}
+
+/**
+ * Remembers a [CollapsableTopBehavior] that can be used to control collapsing. You should use
+ *
+ * @param state the [CollapsableState]
+ * @param snapAnimationSpec animates snapping to the collapsed or expanded state at the end of a
+ * drag or nested scroll. Enabled by default, passing null will disable it and
+ * leave your view in a partially collapsed state.
+ * @param flingAnimationSpec animates flinging the view at the end of a drag or nested scroll.
+ * Enabled by default, passing null will disable reacting to flings.
+ * @param enterAlways If true the view will start to expand as soon as you start scrolling up,
+ * otherwise it will only start expanding when you reach the top of the scrolling view.
+ */
+@Composable
+fun rememberCollapsableTopBehavior(
+    state: CollapsableState = rememberCollapsableState(),
+    snapAnimationSpec: AnimationSpec<Float>? = spring(stiffness = Spring.StiffnessMediumLow),
+    flingAnimationSpec: DecayAnimationSpec<Float>? = rememberSplineBasedDecay(),
+    enterAlways: Boolean = false,
+): CollapsableTopBehavior {
+    return CollapsableTopBehavior(
         state = state,
         snapAnimationSpec = snapAnimationSpec,
         flingAnimationSpec = flingAnimationSpec,
+        enterAlways = enterAlways,
     )
 }
 
 /**
- * A hooks up a [CollapsableBehavior] so that dragging the view will expand and collapse it.
+ * A hooks up a [CollapsableTopBehavior] so that dragging the view will expand and collapse it.
  *
  * @param behavior the collapsable behavior
  * @param enabled whether or not drag is enabled
  */
-fun Modifier.draggable(behavior: CollapsableBehavior, enabled: Boolean = true): Modifier =
+fun Modifier.draggable(behavior: CollapsableTopBehavior, enabled: Boolean = true): Modifier =
     composed {
         val dragLogic = remember { DragLogic(behavior.nestedScrollConnection) }
         draggable(
