@@ -28,7 +28,7 @@ import me.tatarka.compose.collapsable.rememberCollapsableBehavior
 import me.tatarka.compose.collapsable.rememberCollapsableState
 
 enum class Examples {
-    PinnedTabs, MotionLayout, CustomLayout, Accordion
+    PinnedTabs, ComplexColumn, MotionLayout, CustomLayout, Accordion
 }
 
 class MainActivity : ComponentActivity() {
@@ -54,6 +54,18 @@ class MainActivity : ComponentActivity() {
                                     collapsableBehavior = collapsableBehavior,
                                     onNavigateBack = { currentExample = null }
                                 )
+                            }
+                        )
+                    }
+
+                    Examples.ComplexColumn -> {
+                        val collapsableBehavior = rememberCollapsableBehavior()
+                        Page(
+                            modifier = Modifier.nestedScroll(collapsableBehavior.nestedScrollConnection),
+                            topBar = {
+                                ComplexCollapsableColumn(
+                                    collapsableBehavior,
+                                    onNavigateBack = { currentExample = null })
                             }
                         )
                     }
@@ -95,6 +107,7 @@ class MainActivity : ComponentActivity() {
                             Accordion(modifier = Modifier.fillMaxWidth())
                         }
                     }
+
                 }
             }
         }
@@ -110,6 +123,9 @@ fun MainPage(
         TopAppBar(title = { Text("Collapsable") })
         TextButton(onClick = { onSelectExample(Examples.PinnedTabs) }) {
             Text("Pinned Tabs")
+        }
+        TextButton(onClick = { onSelectExample(Examples.ComplexColumn) }) {
+            Text("Complex Collapsable Column")
         }
         TextButton(onClick = { onSelectExample(Examples.MotionLayout) }) {
             Text("Motion Layout")

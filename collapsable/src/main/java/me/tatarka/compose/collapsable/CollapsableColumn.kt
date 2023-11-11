@@ -126,21 +126,18 @@ fun CollapsableColumn(
                 height = expandedHeight + state.heightOffset.roundToInt()
             ) {
                 var y = 0
-                var clipStart = -1
+                var collapseLimit = 0
                 for (placeable in placeables) {
                     val collapse = placeable.parentData as? CollapseChild
                     var offset = y + state.heightOffset
 
-                    if (collapse != null) {
-                        if (clipStart == -1) {
-                            clipStart = y
-                        }
-                    } else {
-                        offset = offset.coerceAtLeast(0f)
+                    if (collapse == null) {
+                        offset = offset.coerceAtLeast(collapseLimit.toFloat())
+                        collapseLimit += placeable.height
                     }
 
                     val clipShape = if (collapse?.clip == true) {
-                        VerticalClipShape(y - clipStart + state.heightOffset)
+                        VerticalClipShape(y - collapseLimit + state.heightOffset)
                     } else {
                         null
                     }
