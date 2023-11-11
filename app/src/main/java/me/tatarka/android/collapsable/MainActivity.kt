@@ -24,7 +24,7 @@ import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.tooling.preview.Preview
 import me.tatarka.android.collapsable.ui.theme.CollapsableTheme
-import me.tatarka.compose.collapsable.rememberCollapsableBehavior
+import me.tatarka.compose.collapsable.rememberCollapsableTopBehavior
 import me.tatarka.compose.collapsable.rememberCollapsableState
 
 enum class Examples {
@@ -46,20 +46,11 @@ class MainActivity : ComponentActivity() {
                     }
 
                     Examples.PinnedTabs -> {
-                        val collapsableBehavior = rememberCollapsableBehavior()
-                        Page(
-                            modifier = Modifier.nestedScroll(collapsableBehavior.nestedScrollConnection),
-                            topBar = {
-                                PinnedTabsTopAppBar(
-                                    collapsableBehavior = collapsableBehavior,
-                                    onNavigateBack = { currentExample = null }
-                                )
-                            }
-                        )
+                        PinnedTabsTopAppBarPage(onNavigateBack = { currentExample = null })
                     }
 
                     Examples.ComplexColumn -> {
-                        val collapsableBehavior = rememberCollapsableBehavior()
+                        val collapsableBehavior = rememberCollapsableTopBehavior()
                         Page(
                             modifier = Modifier.nestedScroll(collapsableBehavior.nestedScrollConnection),
                             topBar = {
@@ -74,7 +65,7 @@ class MainActivity : ComponentActivity() {
                         val offsetLimit = with(LocalDensity.current) {
                             (CollapsedHeight - ExpandedHeight).toPx()
                         }
-                        val collapsableBehavior = rememberCollapsableBehavior(
+                        val collapsableBehavior = rememberCollapsableTopBehavior(
                             rememberCollapsableState(offsetLimit)
                         )
                         Page(
@@ -89,7 +80,7 @@ class MainActivity : ComponentActivity() {
                     }
 
                     Examples.CustomLayout -> {
-                        val collapsableBehavior = rememberCollapsableBehavior()
+                        val collapsableBehavior = rememberCollapsableTopBehavior()
                         Page(
                             modifier = Modifier.nestedScroll(collapsableBehavior.nestedScrollConnection),
                             topBar = {

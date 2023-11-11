@@ -29,10 +29,10 @@ import androidx.constraintlayout.compose.Dimension
 import androidx.constraintlayout.compose.ExperimentalMotionApi
 import androidx.constraintlayout.compose.MotionLayout
 import me.tatarka.android.collapsable.ui.theme.CollapsableTheme
-import me.tatarka.compose.collapsable.CollapsableBehavior
+import me.tatarka.compose.collapsable.CollapsableTopBehavior
 import me.tatarka.compose.collapsable.CollapsableState
 import me.tatarka.compose.collapsable.draggable
-import me.tatarka.compose.collapsable.rememberCollapsableBehavior
+import me.tatarka.compose.collapsable.rememberCollapsableTopBehavior
 import me.tatarka.compose.collapsable.rememberCollapsableState
 
 private val LightBlue = Color(91, 206, 250)
@@ -48,7 +48,7 @@ private enum class PBLayoutId {
 
 @Composable
 fun ParallaxBackgroundTopAppBar(
-    collapsableBehavior: CollapsableBehavior,
+    collapsableBehavior: CollapsableTopBehavior,
     onNavigateBack: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -167,7 +167,7 @@ fun ParallaxBackgroundTopAppBarPreview() {
         val offsetLimit = with(LocalDensity.current) {
             (CollapsedHeight - ExpandedHeight).toPx()
         }
-        val collapsableBehavior = rememberCollapsableBehavior(
+        val collapsableBehavior = rememberCollapsableTopBehavior(
             rememberCollapsableState(offsetLimit)
         )
         Page(
