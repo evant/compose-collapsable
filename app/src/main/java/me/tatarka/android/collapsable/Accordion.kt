@@ -1,8 +1,5 @@
 package me.tatarka.android.collapsable
 
-import androidx.compose.animation.core.AnimationState
-import androidx.compose.animation.core.animateTo
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
@@ -17,7 +14,8 @@ import androidx.compose.material3.ProvideTextStyle
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.Stable
+import androidx.compose.runtime.derivedStateOf
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
@@ -25,63 +23,16 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
 import me.tatarka.compose.collapsable.CollapsableColumn
-import me.tatarka.compose.collapsable.CollapsableState
 import me.tatarka.compose.collapsable.rememberCollapsableState
-
-@Stable
-class AccordionState(val collapsableState: CollapsableState) {
-
-    private var animationJob: Job? = null
-
-    val expanded: Boolean
-        get() = collapsableState.collapsedFraction < 0.5f
-
-    suspend fun collapse() {
-        animationJob?.cancel()
-        animationJob = coroutineScope {
-            launch {
-                AnimationState(initialValue = collapsableState.heightOffset)
-                    .animateTo(collapsableState.heightOffsetLimit) {
-                        collapsableState.heightOffset = value
-                    }
-            }
-        }
-    }
-
-    suspend fun expand() {
-        animationJob?.cancel()
-        animationJob = coroutineScope {
-            launch {
-                AnimationState(initialValue = collapsableState.heightOffset)
-                    .animateTo(0f) { collapsableState.heightOffset = value }
-            }
-        }
-    }
-
-    suspend fun toggle() {
-        if (expanded) {
-            collapse()
-        } else {
-            expand()
-        }
-    }
-}
-
-@Composable
-fun rememberAccordionState(): AccordionState {
-    val collapsableState = rememberCollapsableState()
-    return remember { AccordionState(collapsableState) }
-}
 
 @Composable
 fun Accordion(modifier: Modifier = Modifier) {
     val scope = rememberCoroutineScope()
-    val state = rememberAccordionState()
-    CollapsableColumn(modifier = modifier, state = state.collapsableState) {
+    val state = rememberCollapsableState()
+    val expanded by remember { derivedStateOf { state.collapsedFraction < 0.5f }}
+    CollapsableColumn(modifier = modifier, state = state) {
         Row(
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically,
@@ -90,13 +41,21 @@ fun Accordion(modifier: Modifier = Modifier) {
             ProvideTextStyle(MaterialTheme.typography.titleLarge) {
                 Text("Title")
             }
-            IconButton(onClick = { scope.launch { state.toggle() } }) {
+            IconButton(onClick = {
+                scope.launch {
+                    if (expanded) {
+                        state.animateCollapse()
+                    } else {
+                        state.animateExpand()
+                    }
+                }
+            }) {
                 Icon(
                     Icons.Default.ArrowDropDown,
                     modifier = Modifier.graphicsLayer {
-                        rotationZ = 180 * (1 - state.collapsableState.collapsedFraction)
+                        rotationZ = 180 * (1 - state.collapsedFraction)
                     },
-                    contentDescription = if (state.expanded) {
+                    contentDescription = if (expanded) {
                         "Collapse"
                     } else {
                         "Expand"

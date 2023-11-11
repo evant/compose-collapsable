@@ -1,16 +1,16 @@
 package me.tatarka.compose.collapsable
 
 import androidx.compose.animation.core.AnimationSpec
-import androidx.compose.animation.core.AnimationState
 import androidx.compose.animation.core.DecayAnimationSpec
 import androidx.compose.animation.core.Spring
-import androidx.compose.animation.core.animateDecay
-import androidx.compose.animation.core.animateTo
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.rememberSplineBasedDecay
+import androidx.compose.foundation.MutatePriority
+import androidx.compose.foundation.MutatorMutex
+import androidx.compose.foundation.gestures.DragScope
+import androidx.compose.foundation.gestures.DraggableState
 import androidx.compose.foundation.gestures.Orientation
 import androidx.compose.foundation.gestures.draggable
-import androidx.compose.foundation.gestures.rememberDraggableState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.remember
@@ -22,7 +22,6 @@ import androidx.compose.ui.input.nestedscroll.NestedScrollDispatcher
 import androidx.compose.ui.input.nestedscroll.NestedScrollSource
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.unit.Velocity
-import kotlin.math.abs
 
 @Deprecated(
     "renamed to CollapsableTopBehavior",
@@ -43,8 +42,8 @@ typealias CollapsableBehavior = CollapsableTopBehavior
 @Stable
 class CollapsableTopBehavior(
     val state: CollapsableState,
-    private val snapAnimationSpec: AnimationSpec<Float>?,
-    private val flingAnimationSpec: DecayAnimationSpec<Float>?,
+    internal val snapAnimationSpec: AnimationSpec<Float>?,
+    internal val flingAnimationSpec: DecayAnimationSpec<Float>?,
     private val enterAlways: Boolean = false,
 ) {
     /**
@@ -55,9 +54,8 @@ class CollapsableTopBehavior(
             // Don't intercept if scrolling down.
             if (!enterAlways && available.y > 0f) return Offset.Zero
 
-            val prevHeightOffset = state.heightOffset
-            state.heightOffset += available.y
-            return if (prevHeightOffset != state.heightOffset) {
+            val consumed = state.drag(available.y)
+            return if (consumed != 0f) {
                 // We're in the middle of top app bar collapse or expand.
                 // Consume only the scroll on the Y axis.
                 available.copy(x = 0f)
@@ -76,17 +74,15 @@ class CollapsableTopBehavior(
             } else {
                 if (available.y < 0f || consumed.y < 0f) {
                     // When scrolling up, just update the state's height offset.
-                    val oldHeightOffset = state.heightOffset
-                    state.heightOffset += consumed.y
-                    return Offset(0f, state.heightOffset - oldHeightOffset)
+                    val consumed = state.drag(consumed.y)
+                    return Offset(0f, consumed)
                 }
 
                 if (available.y > 0f) {
                     // Adjust the height offset in case the consumed delta Y is less than what was
                     // recorded as available delta Y in the pre-scroll.
-                    val oldHeightOffset = state.heightOffset
-                    state.heightOffset += available.y
-                    return Offset(0f, state.heightOffset - oldHeightOffset)
+                    val consumed = state.drag(available.y)
+                    return Offset(0f, consumed)
                 }
             }
             return Offset.Zero
@@ -95,64 +91,14 @@ class CollapsableTopBehavior(
         override suspend fun onPostFling(consumed: Velocity, available: Velocity): Velocity {
             return Velocity(
                 x = 0f,
-                y = settle(flingAnimationSpec, snapAnimationSpec, available.y)
+                y = state.fling(
+                    velocity = available.y,
+                    flingAnimationSpec = flingAnimationSpec,
+                    snapAnimationSpec = snapAnimationSpec,
+                )
             )
         }
     }
-
-    private suspend fun settle(
-        flingAnimationSpec: DecayAnimationSpec<Float>? = null,
-        snapAnimationSpec: AnimationSpec<Float>? = null,
-        velocity: Float
-    ): Float {
-        // Check if completely collapsed/expanded. If so, no need to settle and just return
-        // Zero Velocity.
-        if (state.heightOffset == 0f || state.heightOffset == state.heightOffsetLimit) {
-            return 0f
-        }
-        var remainingVelocity = velocity
-        // In case there is an initial velocity that was left after a previous user fling, animate to
-        // continue the motion to expand or collapse.
-        if (flingAnimationSpec != null) {
-            if (abs(velocity) > 1f) {
-                var lastValue = 0f
-                AnimationState(
-                    initialValue = 0f,
-                    initialVelocity = velocity,
-                )
-                    .animateDecay(flingAnimationSpec) {
-                        val delta = value - lastValue
-                        val initialHeightOffset = state.heightOffset
-                        state.heightOffset = initialHeightOffset + delta
-                        val consumed = state.heightOffset - initialHeightOffset
-                        lastValue = value
-                        remainingVelocity = this.velocity
-                        // avoid rounding errors and stop if anything is unconsumed
-                        if (abs(delta - consumed) > 0.5f) {
-                            this.cancelAnimation()
-                        }
-                    }
-            }
-        }
-        // Snap if animation specs were provided.
-        if (snapAnimationSpec != null) {
-            if (state.heightOffset < 0 &&
-                state.heightOffset > state.heightOffsetLimit
-            ) {
-                AnimationState(initialValue = state.heightOffset).animateTo(
-                    if (state.collapsedFraction < 0.5f) {
-                        0f
-                    } else {
-                        state.heightOffsetLimit
-                    },
-                    animationSpec = snapAnimationSpec
-                ) { state.heightOffset = value }
-            }
-        }
-        return velocity - remainingVelocity
-    }
-
-
 }
 
 /**
@@ -213,53 +159,53 @@ fun rememberCollapsableTopBehavior(
  */
 fun Modifier.draggable(behavior: CollapsableTopBehavior, enabled: Boolean = true): Modifier =
     composed {
-        val dragLogic = remember { DragLogic(behavior.nestedScrollConnection) }
+        val dragLogic = remember(behavior) { DragLogic(behavior) }
         draggable(
-            rememberDraggableState(onDelta = { dragLogic.drag(it) }),
+            state = dragLogic,
             onDragStopped = { dragLogic.fling(it) },
             orientation = Orientation.Vertical,
             enabled = enabled,
         ).nestedScroll(behavior.nestedScrollConnection, dragLogic.dispatcher)
     }
 
-private class DragLogic(private val connection: NestedScrollConnection) {
+private class DragLogic(private val behavior: CollapsableTopBehavior) : DraggableState {
     val dispatcher: NestedScrollDispatcher = NestedScrollDispatcher()
 
-    fun drag(delta: Float) {
-        val deltaOffset = Offset(x = 0f, y = delta)
+    private val dragScope: DragScope = object : DragScope {
+        override fun dragBy(pixels: Float): Unit = dispatchRawDelta(pixels)
+    }
+
+    private val scrollMutex = MutatorMutex()
+
+    suspend fun fling(velocity: Float) {
+        val preFlingConsumed = dispatcher.dispatchPreFling(
+            available = Velocity(x = 0f, y = velocity)
+        )
+        val consumed = behavior.state.fling(
+            velocity = velocity - preFlingConsumed.y,
+            flingAnimationSpec = behavior.flingAnimationSpec,
+            snapAnimationSpec = behavior.snapAnimationSpec,
+        )
+        dispatcher.dispatchPostFling(
+            consumed = Velocity(x = 0f, y = consumed),
+            available = Velocity(x = 0f, y = velocity - consumed)
+        )
+    }
+
+    override fun dispatchRawDelta(delta: Float) {
         val preScrollConsumed = dispatcher.dispatchPreScroll(
-            available = deltaOffset,
+            available = Offset(x = 0f, y = delta),
             source = NestedScrollSource.Drag,
         )
-        val onPreScrollConsumed = connection.onPreScroll(
-            available = deltaOffset - preScrollConsumed,
-            source = NestedScrollSource.Drag,
-        )
-        val onPostScrollConsumed = connection.onPostScroll(
-            consumed = Offset.Zero,
-            available = deltaOffset - onPreScrollConsumed,
-            source = NestedScrollSource.Drag,
-        )
+        val consumed = behavior.state.drag(delta = delta - preScrollConsumed.y)
         dispatcher.dispatchPostScroll(
-            consumed = onPostScrollConsumed,
-            available = deltaOffset - onPostScrollConsumed,
+            consumed = Offset(x = 0f, y = consumed),
+            available = Offset(x = 0f, y = delta - consumed),
             source = NestedScrollSource.Drag,
         )
     }
 
-    suspend fun fling(velocity: Float) {
-        val velocityV = Velocity(x = 0f, y = velocity)
-        val preFlingConsumed = dispatcher.dispatchPreFling(available = velocityV)
-        val onPreFlingConsumed = connection.onPreFling(
-            available = velocityV - preFlingConsumed
-        )
-        val onPostFlingConsumed = connection.onPostFling(
-            consumed = Velocity.Zero,
-            available = velocityV - onPreFlingConsumed
-        )
-        dispatcher.dispatchPostFling(
-            consumed = onPostFlingConsumed,
-            available = velocityV - onPostFlingConsumed
-        )
+    override suspend fun drag(dragPriority: MutatePriority, block: suspend DragScope.() -> Unit) {
+        scrollMutex.mutateWith(dragScope, dragPriority, block)
     }
 }
