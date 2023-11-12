@@ -6,7 +6,7 @@ builds upon logic from the compose material 3 top app bar implementation.
 ## Download
 
 ```kotlin
-implementation("me.tatarka.compose.collapsable:compose-collapsable:0.1.0")
+implementation("me.tatarka.compose.collapsable:compose-collapsable:0.2.0")
 ```
 
 ## Usage
