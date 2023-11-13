@@ -26,7 +26,7 @@ For example, a top app bar which hides it's title but pins tabs as you scroll th
 implemented as:
 
 ```kotlin
-val collapsableBehavior = rememberCollapsableBehavior()
+val collapsableBehavior = rememberCollapsableTopBehavior()
 Scaffold(
     modifier = Modifier.nestedScroll(collapsableBehavior.nestedScrollConnection),
     topBar = {
@@ -44,9 +44,9 @@ Scaffold(
 }
 ```
 
-### CollapsableBehavior
+### CollapsableTopBehavior
 
-The `CollapsableBehavior` above has 2 roles. It handles nested scrolling and drags on the
+The `CollapsableTopBehavior` above has 2 roles. It handles nested scrolling and drags on the
 collapsable view itself. You can use these pieces independently in your own implementations. To
 handle nested scrolling, use the `Modifier.nestedScroll()` modifier.
 
@@ -62,7 +62,7 @@ modifier = Modifier.draggable(collapsableBehavior)
 
 ### CollapsableState
 
-`CollapsableBehavior` holds a `CollapsableState` which manages the actual expand and collapse state.
+`CollapsableTopBehavior` holds a `CollapsableState` which manages the actual expand and collapse state.
 You can use this state along with the behavior or by itself for your own more complex
 collapsing implementations. See the CustomLayoutTopAppBar and ParallaxBackgroundTopAppBar examples
 in the sample app.
