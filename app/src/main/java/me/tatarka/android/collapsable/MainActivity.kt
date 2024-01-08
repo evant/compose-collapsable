@@ -50,7 +50,7 @@ class MainActivity : ComponentActivity() {
                     }
 
                     Examples.ComplexColumn -> {
-                        val collapsableBehavior = rememberCollapsableTopBehavior()
+                        val collapsableBehavior = rememberCollapsableTopBehavior(snapAnimationSpec = null)
                         Page(
                             modifier = Modifier.nestedScroll(collapsableBehavior.nestedScrollConnection),
                             topBar = {

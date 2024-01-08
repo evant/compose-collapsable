@@ -161,7 +161,7 @@ class CollapsableState(
         if (flingAnimationSpec != null) {
             if (velocity.absoluteValue > 1f) {
                 remainingVelocity = animatable.animateDecay(
-                    initialVelocity = 0f,
+                    initialVelocity = velocity,
                     animationSpec = flingAnimationSpec,
                 ) {
                     _heightOffset.floatValue = value
