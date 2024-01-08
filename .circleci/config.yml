@@ -17,7 +17,8 @@ jobs:
             - run:
                 name: Build 🐘
                 command: ./gradlew assemble
-            - deploy:
+            - run:
+                name: Deploy
                 command: |
                   if [ "${CIRCLE_BRANCH}" == "main" ]; then
                     echo "$MAVEN_CENTRAL_SEC_RING" | base64 -d > $HOME/secring.gpg
