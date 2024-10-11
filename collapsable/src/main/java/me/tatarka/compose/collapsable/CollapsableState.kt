@@ -65,11 +65,20 @@ class CollapsableState(
     var heightOffsetLimit: Float
         get() = _heightOffsetLimit.floatValue
         set(newLimit) {
+            val oldOffsetLimit = _heightOffsetLimit.floatValue
             _heightOffsetLimit.floatValue = newLimit
-            _heightOffset.floatValue = _heightOffset.floatValue.coerceIn(
-                minimumValue = _heightOffsetLimit.floatValue,
-                maximumValue = 0f,
-            )
+            
+            // If we are fully collapsed keep state, otherwise just make sure we are in the new
+            // valid range.
+            if (_heightOffset.floatValue == oldOffsetLimit) {
+                _heightOffset.floatValue = newLimit
+            } else {
+                _heightOffset.floatValue = _heightOffset.floatValue.coerceIn(
+                    minimumValue = _heightOffsetLimit.floatValue,
+                    maximumValue = 0f,
+                )
+            }
+            
             animatable.updateBounds(
                 lowerBound = newLimit,
                 upperBound = 0f
