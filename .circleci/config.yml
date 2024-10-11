@@ -30,4 +30,11 @@ workflows:
   build:
     jobs:
       - build:
+          filters:
+            branches:
+              ignore: main
+      - build:
           context: opensource-maven
+          filters:
+            branches:
+              only: main              
