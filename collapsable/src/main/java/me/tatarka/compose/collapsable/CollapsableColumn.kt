@@ -10,8 +10,9 @@ import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Outline
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.layout.Layout
-import androidx.compose.ui.layout.ParentDataModifier
 import androidx.compose.ui.layout.Placeable
+import androidx.compose.ui.node.ModifierNodeElement
+import androidx.compose.ui.node.ParentDataModifierNode
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.LayoutDirection
@@ -86,7 +87,7 @@ fun CollapsableColumn(
             var expandedHeight = 0
 
             for (measurable in measureables) {
-                val collapse = measurable.parentData as? CollapseChild
+                val collapse = measurable.parentData as? CollapseChildNode
                 val childConstraints =
                     if (collapse != null && collapse.expandedHeight.isSpecified) {
                         currentConstraints.copy(
@@ -129,7 +130,7 @@ fun CollapsableColumn(
                 var y = 0
                 var collapseLimit = 0
                 for (placeable in placeables) {
-                    val collapse = placeable.parentData as? CollapseChild
+                    val collapse = placeable.parentData as? CollapseChildNode
                     var offset = y + state.heightOffset
 
                     if (collapse == null) {
@@ -219,13 +220,35 @@ interface CollapsableColumnScope {
     ): Modifier
 }
 
-private data class CollapseChild(val collapsedHeight: Dp, val expandedHeight: Dp, val clip: Boolean)
+private data class CollapseChildElement(
+    val collapsedHeight: Dp,
+    val expandedHeight: Dp,
+    val clip: Boolean
+) : ModifierNodeElement<CollapseChildNode>() {
+    override fun create(): CollapseChildNode {
+        return CollapseChildNode(
+            collapsedHeight = collapsedHeight,
+            expandedHeight = expandedHeight,
+            clip = clip
+        )
+    }
 
-private class ChildBehaviorModifier(private val collapse: CollapseChild) : ParentDataModifier {
-    override fun Density.modifyParentData(parentData: Any?) = collapse
+    override fun update(node: CollapseChildNode) {
+        node.collapsedHeight = collapsedHeight
+        node.expandedHeight = expandedHeight
+        node.clip = clip
+    }
+}
+
+private class CollapseChildNode(
+    var collapsedHeight: Dp,
+    var expandedHeight: Dp,
+    var clip: Boolean
+) : Modifier.Node(), ParentDataModifierNode {
+    override fun Density.modifyParentData(parentData: Any?) = this@CollapseChildNode
 }
 
 private object CollapsableColumnScopeInstance : CollapsableColumnScope {
     override fun Modifier.collapse(collapsed: Dp, expanded: Dp, clip: Boolean): Modifier =
-        then(ChildBehaviorModifier(CollapseChild(collapsed, expanded, clip)))
+        then(CollapseChildElement(collapsed, expanded, clip))
 }
