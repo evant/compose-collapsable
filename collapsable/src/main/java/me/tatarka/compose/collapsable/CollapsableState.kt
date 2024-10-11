@@ -65,11 +65,20 @@ class CollapsableState(
     var heightOffsetLimit: Float
         get() = _heightOffsetLimit.floatValue
         set(newLimit) {
+            val oldOffsetLimit = _heightOffsetLimit.floatValue
             _heightOffsetLimit.floatValue = newLimit
-            _heightOffset.floatValue = _heightOffset.floatValue.coerceIn(
-                minimumValue = _heightOffsetLimit.floatValue,
-                maximumValue = 0f,
-            )
+            
+            // If we are fully collapsed keep state, otherwise just make sure we are in the new
+            // valid range.
+            if (_heightOffset.floatValue == oldOffsetLimit) {
+                _heightOffset.floatValue = newLimit
+            } else {
+                _heightOffset.floatValue = _heightOffset.floatValue.coerceIn(
+                    minimumValue = _heightOffsetLimit.floatValue,
+                    maximumValue = 0f,
+                )
+            }
+            
             animatable.updateBounds(
                 lowerBound = newLimit,
                 upperBound = 0f
@@ -146,7 +155,10 @@ class CollapsableState(
     ): Float {
         // Check if completely collapsed/expanded. If so, no need to settle and just return
         // Zero Velocity.
-        if (_heightOffset.floatValue == 0f || _heightOffset.floatValue == _heightOffsetLimit.floatValue) {
+        // Note that we don't check for 0f due to float precision with the collapsedFraction
+        // calculation.
+        val fraction = collapsedFraction
+        if (fraction < 0.01f || fraction == 1f) {
             return 0f
         }
         if (flingAnimationSpec != null || snapAnimationSpec != null) {
@@ -245,7 +257,7 @@ class CollapsableState(
 @Composable
 fun rememberCollapsableState(): CollapsableState {
     return rememberSaveable(saver = CollapsableState.Saver) {
-        CollapsableState(initialHeightOffset = 0f, initialHeightOffsetLimit = 0f)
+        CollapsableState(initialHeightOffset = 0f, initialHeightOffsetLimit = -Float.MAX_VALUE)
     }
 }
 
@@ -254,13 +266,18 @@ fun rememberCollapsableState(): CollapsableState {
  *
  * @param initialHeightOffsetLimit the initial [CollapsableState.heightOffsetLimit] in pixels. This
  * is useful for cases where it is know ahead of time instead of calculated on layout.
+ * @param initialHeightOffset the initial [CollapsableState.heightOffset] in pixels. This allows you
+ * to set the initial state as partially or fully collapsed.
  */
 @Composable
-fun rememberCollapsableState(initialHeightOffsetLimit: Float = 0f): CollapsableState {
+fun rememberCollapsableState(
+    initialHeightOffsetLimit: Float = -Float.MAX_VALUE,
+    initialHeightOffset: Float = 0f,
+): CollapsableState {
     return rememberSaveable(saver = CollapsableState.Saver) {
         CollapsableState(
-            initialHeightOffset = 0f,
-            initialHeightOffsetLimit = initialHeightOffsetLimit
+            initialHeightOffsetLimit = initialHeightOffsetLimit,
+            initialHeightOffset = initialHeightOffset,
         )
     }
 }

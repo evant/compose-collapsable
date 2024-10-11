@@ -20,6 +20,7 @@ import androidx.compose.material3.TabRow
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.material3.ripple
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -52,7 +53,7 @@ fun PinnedTabsTopAppBar(
     ) {
         TopAppBar(
             title = { Text("Title") },
-            colors = TopAppBarDefaults.smallTopAppBarColors(containerColor = Color.Transparent),
+            colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent),
             navigationIcon = {
                 NavigateBackButton(onClick = onNavigateBack)
             },
@@ -76,7 +77,7 @@ fun PinnedTabsTopAppBar(
                         interactionSource = interactionSource,
                         modifier = Modifier.indication(
                             interactionSource = interactionSource,
-                            indication = rememberRipple(bounded = false, radius = 20.dp)
+                            indication = ripple(bounded = false, radius = 20.dp)
                         )
                     )
                     Text("Enter Always")

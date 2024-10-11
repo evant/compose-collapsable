@@ -1,3 +1,18 @@
+/*
+ * Copyright 2021 The Android Open Source Project
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package me.tatarka.compose.collapsable
 
 import androidx.compose.animation.core.AnimationSpec
@@ -5,20 +20,15 @@ import androidx.compose.animation.core.DecayAnimationSpec
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.rememberSplineBasedDecay
-import androidx.compose.foundation.MutatePriority
-import androidx.compose.foundation.MutatorMutex
-import androidx.compose.foundation.gestures.DragScope
-import androidx.compose.foundation.gestures.DraggableState
 import androidx.compose.foundation.gestures.Orientation
 import androidx.compose.foundation.gestures.draggable
+import androidx.compose.foundation.gestures.rememberDraggableState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Stable
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.composed
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
-import androidx.compose.ui.input.nestedscroll.NestedScrollDispatcher
 import androidx.compose.ui.input.nestedscroll.NestedScrollSource
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.unit.Velocity
@@ -157,55 +167,17 @@ fun rememberCollapsableTopBehavior(
  * @param behavior the collapsable behavior
  * @param enabled whether or not drag is enabled
  */
-fun Modifier.draggable(behavior: CollapsableTopBehavior, enabled: Boolean = true): Modifier =
-    composed {
-        val dragLogic = remember(behavior) { DragLogic(behavior) }
-        draggable(
-            state = dragLogic,
-            onDragStopped = { dragLogic.fling(it) },
-            orientation = Orientation.Vertical,
-            enabled = enabled,
-        ).nestedScroll(behavior.nestedScrollConnection, dragLogic.dispatcher)
-    }
-
-private class DragLogic(private val behavior: CollapsableTopBehavior) : DraggableState {
-    val dispatcher: NestedScrollDispatcher = NestedScrollDispatcher()
-
-    private val dragScope: DragScope = object : DragScope {
-        override fun dragBy(pixels: Float): Unit = dispatchRawDelta(pixels)
-    }
-
-    private val scrollMutex = MutatorMutex()
-
-    suspend fun fling(velocity: Float) {
-        val preFlingConsumed = dispatcher.dispatchPreFling(
-            available = Velocity(x = 0f, y = velocity)
-        )
-        val consumed = behavior.state.fling(
-            velocity = velocity - preFlingConsumed.y,
-            flingAnimationSpec = behavior.flingAnimationSpec,
-            snapAnimationSpec = behavior.snapAnimationSpec,
-        )
-        dispatcher.dispatchPostFling(
-            consumed = Velocity(x = 0f, y = consumed),
-            available = Velocity(x = 0f, y = velocity - consumed)
-        )
-    }
-
-    override fun dispatchRawDelta(delta: Float) {
-        val preScrollConsumed = dispatcher.dispatchPreScroll(
-            available = Offset(x = 0f, y = delta),
-            source = NestedScrollSource.Drag,
-        )
-        val consumed = behavior.state.drag(delta = delta - preScrollConsumed.y)
-        dispatcher.dispatchPostScroll(
-            consumed = Offset(x = 0f, y = consumed),
-            available = Offset(x = 0f, y = delta - consumed),
-            source = NestedScrollSource.Drag,
-        )
-    }
-
-    override suspend fun drag(dragPriority: MutatePriority, block: suspend DragScope.() -> Unit) {
-        scrollMutex.mutateWith(dragScope, dragPriority, block)
-    }
+fun Modifier.draggable(behavior: CollapsableTopBehavior, enabled: Boolean = true): Modifier = composed {
+    this.draggable(
+        orientation = Orientation.Vertical,
+        state = rememberDraggableState { delta -> behavior.state.drag(delta) },
+        enabled = enabled,
+        onDragStopped = { velocity ->
+            behavior.state.fling(
+                velocity,
+                behavior.flingAnimationSpec,
+                behavior.snapAnimationSpec,
+            )
+        }
+    )
 }
