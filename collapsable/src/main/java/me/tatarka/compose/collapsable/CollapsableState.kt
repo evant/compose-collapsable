@@ -33,7 +33,8 @@ import kotlin.math.absoluteValue
  * A state object that can be hoisted to control and observe the collapsable state. The state is
  * read and updated by [CollapsableTopBehavior].
  *
- * In most cases, this state will be created via [rememberCollapsableState].
+ * In most cases, this state will be created via [rememberCollapseUpState] or
+ * [rememberCollapseDownState].
  *
  * To update your view from this state you should do two things:
  * 1. Set [heightOffsetLimit] either by passing in the initial value ahead of time or calculating
@@ -52,11 +53,11 @@ class CollapsableState(
     initialHeightOffsetLimit: Float,
     initialHeightOffset: Float,
 ) {
-
     /**
      * The height offset limit in pixels, which represents the limit it is allowed to collapse to.
-     * Note: This value is typically negative, where 0 means no collapsing will take place and a
-     * negative value will be the distance it will collapse.
+     * Note: This value is negative when collapsing up and positive when collapsing down. 0 means
+     * no collapsing will take place and a positive or negative value will be the distance it will
+     * collapse.
      *
      * Use this limit to coerce the [heightOffset] value when it's updated.
      */
@@ -67,22 +68,26 @@ class CollapsableState(
         set(newLimit) {
             val oldOffsetLimit = _heightOffsetLimit.floatValue
             _heightOffsetLimit.floatValue = newLimit
-            
+
             // If we are fully collapsed keep state, otherwise just make sure we are in the new
             // valid range.
             if (_heightOffset.floatValue == oldOffsetLimit) {
                 _heightOffset.floatValue = newLimit
             } else {
-                _heightOffset.floatValue = _heightOffset.floatValue.coerceIn(
-                    minimumValue = _heightOffsetLimit.floatValue,
-                    maximumValue = 0f,
+                _heightOffset.floatValue = constrainHeight(_heightOffset.floatValue)
+            }
+
+            if (_heightOffsetLimit.floatValue < 0) {
+                animatable.updateBounds(
+                    lowerBound = newLimit,
+                    upperBound = 0f,
+                )
+            } else {
+                animatable.updateBounds(
+                    lowerBound = 0f,
+                    upperBound = newLimit,
                 )
             }
-            
-            animatable.updateBounds(
-                lowerBound = newLimit,
-                upperBound = 0f
-            )
         }
 
     private var _heightOffset = mutableFloatStateOf(initialHeightOffset)
@@ -96,10 +101,7 @@ class CollapsableState(
     var heightOffset: Float
         get() = _heightOffset.floatValue
         set(newOffset) {
-            _heightOffset.floatValue = newOffset.coerceIn(
-                minimumValue = _heightOffsetLimit.floatValue,
-                maximumValue = 0f
-            )
+            _heightOffset.floatValue = constrainHeight(newOffset)
         }
 
     /**
@@ -115,6 +117,16 @@ class CollapsableState(
             0f
         }
 
+    private fun constrainHeight(height: Float): Float {
+        val limit = _heightOffsetLimit.floatValue
+        return if (limit < 0) {
+            height.coerceIn(minimumValue = limit, maximumValue = 0f)
+        } else if (limit > 0) {
+            height.coerceIn(minimumValue = 0f, maximumValue = limit)
+        } else {
+            0f
+        }
+    }
 
     /**
      * Drags [heightOffset] the given delta.
@@ -254,6 +266,10 @@ class CollapsableState(
 /**
  * Remembers a [CollapsableState].
  */
+@Deprecated(
+    message = "Renamed to rememberCollapseUpState",
+    replaceWith = ReplaceWith("rememberCollapseUpState()")
+)
 @Composable
 fun rememberCollapsableState(): CollapsableState {
     return rememberSaveable(saver = CollapsableState.Saver) {
@@ -269,6 +285,10 @@ fun rememberCollapsableState(): CollapsableState {
  * @param initialHeightOffset the initial [CollapsableState.heightOffset] in pixels. This allows you
  * to set the initial state as partially or fully collapsed.
  */
+@Deprecated(
+    message = "Renamed to rememberCollapseUpState",
+    replaceWith = ReplaceWith("rememberCollapseUpState(initialHeightOffsetLimit = initialHeightOffsetLimit,\ninitialHeightOffset = initialHeightOffset)")
+)
 @Composable
 fun rememberCollapsableState(
     initialHeightOffsetLimit: Float = -Float.MAX_VALUE,
@@ -282,3 +302,44 @@ fun rememberCollapsableState(
     }
 }
 
+/**
+ * Remembers a [CollapsableState] which collapses up.
+ *
+ * @param initialHeightOffsetLimit the initial [CollapsableState.heightOffsetLimit] in pixels. This
+ * is useful for cases where it is know ahead of time instead of calculated on layout.
+ * @param initialHeightOffset the initial [CollapsableState.heightOffset] in pixels. This allows you
+ * to set the initial state as partially or fully collapsed.
+ */
+@Composable
+fun rememberCollapseUpState(
+    initialHeightOffsetLimit: Float = -Float.MAX_VALUE,
+    initialHeightOffset: Float = 0f,
+): CollapsableState {
+    return rememberSaveable(saver = CollapsableState.Saver) {
+        CollapsableState(
+            initialHeightOffsetLimit = initialHeightOffsetLimit,
+            initialHeightOffset = initialHeightOffset,
+        )
+    }
+}
+
+/**
+ * Remembers a [CollapsableState] which collapses down.
+ *
+ * @param initialHeightOffsetLimit the initial [CollapsableState.heightOffsetLimit] in pixels. This
+ * is useful for cases where it is know ahead of time instead of calculated on layout.
+ * @param initialHeightOffset the initial [CollapsableState.heightOffset] in pixels. This allows you
+ * to set the initial state as partially or fully collapsed.
+ */
+@Composable
+fun rememberCollapseDownState(
+    initialHeightOffsetLimit: Float = Float.MAX_VALUE,
+    initialHeightOffset: Float = 0f,
+): CollapsableState {
+    return rememberSaveable(saver = CollapsableState.Saver) {
+        CollapsableState(
+            initialHeightOffsetLimit = initialHeightOffsetLimit,
+            initialHeightOffset = initialHeightOffset,
+        )
+    }
+}

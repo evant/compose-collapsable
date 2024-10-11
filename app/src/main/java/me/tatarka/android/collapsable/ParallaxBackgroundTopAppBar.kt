@@ -29,11 +29,11 @@ import androidx.constraintlayout.compose.Dimension
 import androidx.constraintlayout.compose.ExperimentalMotionApi
 import androidx.constraintlayout.compose.MotionLayout
 import me.tatarka.android.collapsable.ui.theme.CollapsableTheme
-import me.tatarka.compose.collapsable.CollapsableTopBehavior
 import me.tatarka.compose.collapsable.CollapsableState
+import me.tatarka.compose.collapsable.CollapsableTopBehavior
 import me.tatarka.compose.collapsable.draggable
 import me.tatarka.compose.collapsable.rememberCollapsableTopBehavior
-import me.tatarka.compose.collapsable.rememberCollapsableState
+import me.tatarka.compose.collapsable.rememberCollapseUpState
 
 private val LightBlue = Color(91, 206, 250)
 private val LightPink = Color(245, 169, 184)
@@ -168,7 +168,7 @@ fun ParallaxBackgroundTopAppBarPreview() {
             (CollapsedHeight - ExpandedHeight).toPx()
         }
         val collapsableBehavior = rememberCollapsableTopBehavior(
-            rememberCollapsableState(offsetLimit)
+            rememberCollapseUpState(initialHeightOffsetLimit = offsetLimit)
         )
         Page(
             modifier = Modifier.nestedScroll(collapsableBehavior.nestedScrollConnection),

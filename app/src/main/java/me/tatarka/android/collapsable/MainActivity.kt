@@ -24,12 +24,13 @@ import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.tooling.preview.Preview
 import me.tatarka.android.collapsable.ui.theme.CollapsableTheme
-import me.tatarka.compose.collapsable.rememberCollapsableState
+import me.tatarka.compose.collapsable.rememberCollapsableBottomBehavior
 import me.tatarka.compose.collapsable.rememberCollapsableTopBehavior
+import me.tatarka.compose.collapsable.rememberCollapseUpState
 import java.io.Serializable
 
 enum class Examples : Serializable {
-    PinnedTabs, ComplexColumn, MotionLayout, CustomLayout, Accordion
+    PinnedTabs, ComplexColumn, MotionLayout, CustomTopBar, CustomBottomBar, Accordion
 }
 
 class MainActivity : ComponentActivity() {
@@ -51,7 +52,8 @@ class MainActivity : ComponentActivity() {
                     }
 
                     Examples.ComplexColumn -> {
-                        val collapsableBehavior = rememberCollapsableTopBehavior(snapAnimationSpec = null)
+                        val collapsableBehavior =
+                            rememberCollapsableTopBehavior(snapAnimationSpec = null)
                         Page(
                             modifier = Modifier.nestedScroll(collapsableBehavior.nestedScrollConnection),
                             topBar = {
@@ -67,7 +69,7 @@ class MainActivity : ComponentActivity() {
                             (CollapsedHeight - ExpandedHeight).toPx()
                         }
                         val collapsableBehavior = rememberCollapsableTopBehavior(
-                            rememberCollapsableState(offsetLimit)
+                            rememberCollapseUpState(initialHeightOffsetLimit = offsetLimit)
                         )
                         Page(
                             modifier = Modifier.nestedScroll(collapsableBehavior.nestedScrollConnection),
@@ -80,7 +82,7 @@ class MainActivity : ComponentActivity() {
                         )
                     }
 
-                    Examples.CustomLayout -> {
+                    Examples.CustomTopBar -> {
                         val collapsableBehavior = rememberCollapsableTopBehavior()
                         Page(
                             modifier = Modifier.nestedScroll(collapsableBehavior.nestedScrollConnection),
@@ -88,6 +90,19 @@ class MainActivity : ComponentActivity() {
                                 CustomLayoutTopAppBar(
                                     collapsableBehavior = collapsableBehavior,
                                     onNavigateBack = { currentExample = null }
+                                )
+                            }
+                        )
+                    }
+
+                    Examples.CustomBottomBar -> {
+                        val collapsableBehavior = rememberCollapsableBottomBehavior()
+                        Page(
+                            modifier = Modifier.nestedScroll(collapsableBehavior.nestedScrollConnection),
+                            bottomBar = {
+                                CustomLayoutBottomAppBar(
+                                    collapsableBehavior = collapsableBehavior,
+                                    onNavigateBack = { currentExample = null },
                                 )
                             }
                         )
@@ -122,8 +137,11 @@ fun MainPage(
         TextButton(onClick = { onSelectExample(Examples.MotionLayout) }) {
             Text("Motion Layout")
         }
-        TextButton(onClick = { onSelectExample(Examples.CustomLayout) }) {
-            Text("Custom Layout")
+        TextButton(onClick = { onSelectExample(Examples.CustomTopBar) }) {
+            Text("Custom Top Bar")
+        }
+        TextButton(onClick = { onSelectExample(Examples.CustomBottomBar) }) {
+            Text("Custom Bottom Bar")
         }
         TextButton(onClick = { onSelectExample(Examples.Accordion) }) {
             Text("Accordion")

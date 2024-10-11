@@ -1,7 +1,13 @@
 package me.tatarka.android.collapsable
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.WindowInsetsSides
+import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.navigationBars
+import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
@@ -17,25 +23,27 @@ import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.lerp
 import me.tatarka.android.collapsable.ui.theme.CollapsableTheme
+import me.tatarka.compose.collapsable.CollapsableBottomBehavior
 import me.tatarka.compose.collapsable.CollapsableState
-import me.tatarka.compose.collapsable.CollapsableTopBehavior
 import me.tatarka.compose.collapsable.draggable
-import me.tatarka.compose.collapsable.rememberCollapsableTopBehavior
+import me.tatarka.compose.collapsable.rememberCollapsableBottomBehavior
 import kotlin.math.roundToInt
 
-private enum class TopLayoutId {
+private enum class BottomLayoutId {
     Navigation, Title, Action
 }
 
 @Composable
-fun CustomLayoutTopAppBar(
-    collapsableBehavior: CollapsableTopBehavior,
+fun CustomLayoutBottomAppBar(
+    collapsableBehavior: CollapsableBottomBehavior,
     onNavigateBack: () -> Unit,
     modifier: Modifier = Modifier,
+    windowInsets: WindowInsets = WindowInsets.navigationBars.only(WindowInsetsSides.Bottom)
 ) {
-    CustomLayoutTopAppBarContent(
+    CustomLayoutBottomAppBarContent(
         state = collapsableBehavior.state,
         onNavigateBack = onNavigateBack,
+        contentPadding = windowInsets.asPaddingValues(),
         modifier = modifier
             .fillMaxWidth()
             .background(MaterialTheme.colorScheme.surfaceColorAtElevation(3.dp))
@@ -44,17 +52,18 @@ fun CustomLayoutTopAppBar(
 }
 
 @Composable
-private fun CustomLayoutTopAppBarContent(
+private fun CustomLayoutBottomAppBarContent(
     state: CollapsableState,
     onNavigateBack: () -> Unit,
-    modifier: Modifier = Modifier
+    contentPadding: PaddingValues,
+    modifier: Modifier = Modifier,
 ) {
     Layout(
         modifier = modifier,
         content = {
             NavigateBackButton(
                 onClick = onNavigateBack,
-                modifier = Modifier.layoutId(TopLayoutId.Navigation)
+                modifier = Modifier.layoutId(BottomLayoutId.Navigation)
             )
 
             Text(
@@ -62,15 +71,15 @@ private fun CustomLayoutTopAppBarContent(
                 style = MaterialTheme.typography.titleLarge,
                 modifier = Modifier
                     .padding(vertical = 16.dp)
-                    .layoutId(TopLayoutId.Title)
+                    .layoutId(BottomLayoutId.Title)
             )
 
-            Button(onClick = {}, modifier = Modifier.layoutId(TopLayoutId.Action)) {
+            Button(onClick = {}, modifier = Modifier.layoutId(BottomLayoutId.Action)) {
                 Text("Action")
             }
         },
         measurePolicy = { measurables, constraints ->
-            val navigationPlaceable = measurables.first { it.layoutId == TopLayoutId.Navigation }
+            val navigationPlaceable = measurables.first { it.layoutId == BottomLayoutId.Navigation }
                 .measure(
                     Constraints(
                         maxWidth = constraints.maxWidth,
@@ -78,10 +87,15 @@ private fun CustomLayoutTopAppBarContent(
                     )
                 )
 
-            val titlePlaceable = measurables.first { it.layoutId == TopLayoutId.Title }
-                .measure(constraints.copy(minHeight = 0))
+            val titlePlaceable = measurables.first { it.layoutId == BottomLayoutId.Title }
+                .measure(
+                    Constraints(
+                        maxWidth = constraints.maxWidth - navigationPlaceable.width,
+                        maxHeight = constraints.maxHeight
+                    )
+                )
 
-            val actionPlaceable = measurables.first { it.layoutId == TopLayoutId.Action }
+            val actionPlaceable = measurables.first { it.layoutId == BottomLayoutId.Action }
                 .measure(
                     Constraints(
                         maxWidth = constraints.maxWidth,
@@ -89,29 +103,31 @@ private fun CustomLayoutTopAppBarContent(
                     )
                 )
 
-            val collapsedHeight = maxOf(navigationPlaceable.height, titlePlaceable.height)
-            val expandedHeight = navigationPlaceable.height + titlePlaceable.height
+            val topPadding = contentPadding.calculateTopPadding().roundToPx()
+            val bottomPadding = contentPadding.calculateBottomPadding().roundToPx()
 
-            state.heightOffsetLimit = (collapsedHeight - expandedHeight).toFloat()
+            val expandedHeight = maxOf(navigationPlaceable.height, titlePlaceable.height) +
+                    topPadding + bottomPadding
+
+            state.heightOffsetLimit = expandedHeight.toFloat()
 
             val width = constraints.minWidth
-            val height = (expandedHeight + state.heightOffset.roundToInt())
-                .coerceAtLeast(constraints.minHeight)
+            val offset = state.heightOffset.roundToInt()
+            val height = expandedHeight - offset
             layout(width, height) {
-                navigationPlaceable.place(0, (collapsedHeight - navigationPlaceable.height) / 2)
+                navigationPlaceable.place(
+                    x = 0,
+                    y = (expandedHeight - bottomPadding - navigationPlaceable.height) / 2 + offset
+                )
                 titlePlaceable.place(
-                    x = lerp(16.dp, 48.dp, state.collapsedFraction).roundToPx(),
-                    y = lerp(
-                        navigationPlaceable.height.toDp(),
-                        0.dp,
-                        state.collapsedFraction
-                    ).roundToPx()
+                    x = navigationPlaceable.width,
+                    y = (expandedHeight - bottomPadding - titlePlaceable.height) / 2 + offset
                 )
                 actionPlaceable.place(
                     x = width - actionPlaceable.width - 16.dp.roundToPx(),
                     y = lerp(
-                        (height - actionPlaceable.height / 2).toDp(),
-                        ((collapsedHeight - actionPlaceable.height) / 2).toDp(),
+                        (-actionPlaceable.height / 2).toDp(),
+                        -offset.toDp(),
                         state.collapsedFraction
                     ).roundToPx()
                 )
@@ -122,12 +138,12 @@ private fun CustomLayoutTopAppBarContent(
 
 @Preview(showSystemUi = true)
 @Composable
-fun CustomLayoutTopAppBarPreview() {
+fun CustomLayoutBottomAppBarPreview() {
     CollapsableTheme {
-        val collapsableBehavior = rememberCollapsableTopBehavior()
+        val collapsableBehavior = rememberCollapsableBottomBehavior()
         Page(
             modifier = Modifier.nestedScroll(collapsableBehavior.nestedScrollConnection),
-            topBar = { CustomLayoutTopAppBar(collapsableBehavior, onNavigateBack = {}) }
+            bottomBar = { CustomLayoutBottomAppBar(collapsableBehavior, onNavigateBack = {}) }
         )
     }
 }
