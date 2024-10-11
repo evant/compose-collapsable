@@ -28,6 +28,7 @@ import androidx.compose.runtime.saveable.listSaver
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
 import kotlin.math.absoluteValue
+import kotlin.math.sign
 
 /**
  * A state object that can be hoisted to control and observe the collapsable state. The state is
@@ -91,6 +92,12 @@ class CollapsableState(
         }
 
     private var _heightOffset = mutableFloatStateOf(initialHeightOffset)
+
+    /**
+     * The direction to collapse in, computed by taking the sign of the current [heightOffsetLimit].
+     * If -1 then collapsing up, if 1 then collapsing down, if 0 then not collapsing.
+     */
+    val direction: Float get() = _heightOffsetLimit.floatValue.sign
 
     /**
      * The current height offset in pixels. This height offset is applied to the fixed

@@ -30,7 +30,7 @@ import me.tatarka.compose.collapsable.rememberCollapseUpState
 import java.io.Serializable
 
 enum class Examples : Serializable {
-    PinnedTabs, ComplexColumn, MotionLayout, CustomTopBar, CustomBottomBar, Accordion
+    PinnedTopTabs, PinnedBottomTabs, ComplexColumn, MotionLayout, CustomTopBar, CustomBottomBar, Accordion
 }
 
 class MainActivity : ComponentActivity() {
@@ -47,8 +47,21 @@ class MainActivity : ComponentActivity() {
                         MainPage(onSelectExample = { currentExample = it })
                     }
 
-                    Examples.PinnedTabs -> {
+                    Examples.PinnedTopTabs -> {
                         PinnedTabsTopAppBarPage(onNavigateBack = { currentExample = null })
+                    }
+
+                    Examples.PinnedBottomTabs -> {
+                        val collapsableBehavior = rememberCollapsableBottomBehavior()
+                        Page(
+                            modifier = Modifier.nestedScroll(collapsableBehavior.nestedScrollConnection),
+                            bottomBar = {
+                                PinnedTabsBottomAppBar(
+                                    collapsableBehavior = collapsableBehavior,
+                                    onNavigateBack = { currentExample = null }
+                                )
+                            }
+                        )
                     }
 
                     Examples.ComplexColumn -> {
@@ -128,8 +141,11 @@ fun MainPage(
 ) {
     Column(modifier = modifier, horizontalAlignment = Alignment.CenterHorizontally) {
         TopAppBar(title = { Text("Collapsable") })
-        TextButton(onClick = { onSelectExample(Examples.PinnedTabs) }) {
-            Text("Pinned Tabs")
+        TextButton(onClick = { onSelectExample(Examples.PinnedTopTabs) }) {
+            Text("Pinned Top Tabs")
+        }
+        TextButton(onClick = { onSelectExample(Examples.PinnedBottomTabs) }) {
+            Text("Pinned Bottom Tabs")
         }
         TextButton(onClick = { onSelectExample(Examples.ComplexColumn) }) {
             Text("Complex Collapsable Column")
