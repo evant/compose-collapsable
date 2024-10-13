@@ -51,6 +51,7 @@ fun CollapsableColumn(
     CollapsableColumn(
         state = behavior.state,
         modifier = modifier.draggable(behavior),
+        direction = CollapsableDirection.Up,
         content = content,
     )
 }
@@ -84,9 +85,18 @@ fun CollapsableColumn(
 ) {
     CollapsableColumn(
         state = behavior.state,
+        direction = CollapsableDirection.Down,
         modifier = modifier.draggable(behavior),
         content = content,
     )
+}
+
+/**
+ * The direction the column collapses in.
+ */
+enum class CollapsableDirection {
+    Up,
+    Down,
 }
 
 /**
@@ -102,14 +112,15 @@ fun CollapsableColumn(
  * ```
  *
  * @param modifier modifiers to be applied to the layout
- * @param state the state to manage collapsing the content. Use [rememberCollapseUpState] if you
- * want to collapse content up and [rememberCollapseDownState] if you want to collapse content down.
+ * @param state the state to manage collapsing the content.
+ * @param direction the direction the column collapses in. Defaults to up.
  * @param content the content of the column
  **/
 @Composable
 fun CollapsableColumn(
     modifier: Modifier = Modifier,
-    state: CollapsableState = rememberCollapseUpState(),
+    state: CollapsableState = rememberCollapsableState(),
+    direction: CollapsableDirection = CollapsableDirection.Up,
     content: @Composable CollapsableColumnScope.() -> Unit
 ) {
     Layout(
@@ -157,18 +168,16 @@ fun CollapsableColumn(
                 placeables.add(placeable)
             }
 
-            // set the offset limit, respecting already set direction
-            if (state.direction > 0) {
-                state.heightOffsetLimit = (expandedHeight - collapsedHeight).toFloat()
-            } else {
-                state.heightOffsetLimit = (collapsedHeight - expandedHeight).toFloat()
-            }
+            state.heightOffsetLimit = (collapsedHeight - expandedHeight).toFloat()
 
             layout(
                 width = width,
-                height = expandedHeight - abs(state.heightOffset).roundToInt()
+                height = expandedHeight + state.heightOffset.roundToInt()
             ) {
-                var y = (-state.heightOffset).coerceAtMost(0f)
+                var y = when (direction) {
+                    CollapsableDirection.Up -> 0f
+                    CollapsableDirection.Down -> -state.heightOffset
+                }
                 var collapseLimit = 0
                 for (placeable in placeables) {
                     val collapse = placeable.parentData as? CollapseChildNode

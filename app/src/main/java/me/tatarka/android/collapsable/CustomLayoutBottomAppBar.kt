@@ -109,25 +109,25 @@ private fun CustomLayoutBottomAppBarContent(
             val expandedHeight = maxOf(navigationPlaceable.height, titlePlaceable.height) +
                     topPadding + bottomPadding
 
-            state.heightOffsetLimit = expandedHeight.toFloat()
+            state.heightOffsetLimit = -expandedHeight.toFloat()
 
             val width = constraints.minWidth
             val offset = state.heightOffset.roundToInt()
-            val height = expandedHeight - offset
+            val height = expandedHeight + offset
             layout(width, height) {
                 navigationPlaceable.place(
                     x = 0,
-                    y = (expandedHeight - bottomPadding - navigationPlaceable.height) / 2 + offset
+                    y = (expandedHeight - bottomPadding - navigationPlaceable.height) / 2
                 )
                 titlePlaceable.place(
                     x = navigationPlaceable.width,
-                    y = (expandedHeight - bottomPadding - titlePlaceable.height) / 2 + offset
+                    y = (expandedHeight - bottomPadding - titlePlaceable.height) / 2
                 )
                 actionPlaceable.place(
                     x = width - actionPlaceable.width - 16.dp.roundToPx(),
                     y = lerp(
                         (-actionPlaceable.height / 2).toDp(),
-                        -offset.toDp(),
+                        offset.toDp(),
                         state.collapsedFraction
                     ).roundToPx()
                 )

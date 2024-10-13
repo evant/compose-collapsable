@@ -25,12 +25,12 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.launch
 import me.tatarka.compose.collapsable.CollapsableColumn
-import me.tatarka.compose.collapsable.rememberCollapseUpState
+import me.tatarka.compose.collapsable.rememberCollapsableState
 
 @Composable
 fun Accordion(modifier: Modifier = Modifier) {
     val scope = rememberCoroutineScope()
-    val state = rememberCollapseUpState()
+    val state = rememberCollapsableState()
     val expanded by remember { derivedStateOf { state.collapsedFraction < 0.5f }}
     CollapsableColumn(modifier = modifier, state = state) {
         Row(

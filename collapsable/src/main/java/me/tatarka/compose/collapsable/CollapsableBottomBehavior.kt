@@ -43,7 +43,7 @@ class CollapsableBottomBehavior(
             available: Offset,
             source: NestedScrollSource
         ): Offset {
-            state.drag(-consumed.y)
+            state.drag(consumed.y)
             return Offset.Zero
         }
 
@@ -51,7 +51,7 @@ class CollapsableBottomBehavior(
             return Velocity(
                 x = 0f,
                 y = state.fling(
-                    velocity = -available.y,
+                    velocity = available.y,
                     flingAnimationSpec = flingAnimationSpec,
                     snapAnimationSpec = snapAnimationSpec,
                 )
@@ -72,7 +72,7 @@ class CollapsableBottomBehavior(
  */
 @Composable
 fun rememberCollapsableBottomBehavior(
-    state: CollapsableState = rememberCollapseDownState(),
+    state: CollapsableState = rememberCollapsableState(),
     snapAnimationSpec: AnimationSpec<Float>? = spring(stiffness = Spring.StiffnessMediumLow),
     flingAnimationSpec: DecayAnimationSpec<Float>? = rememberSplineBasedDecay(),
 ): CollapsableBottomBehavior {
@@ -92,11 +92,11 @@ fun rememberCollapsableBottomBehavior(
 fun Modifier.draggable(behavior: CollapsableBottomBehavior, enabled: Boolean = true): Modifier = composed {
     this.draggable(
         orientation = Orientation.Vertical,
-        state = rememberDraggableState { delta -> behavior.state.drag(delta) },
+        state = rememberDraggableState { delta -> behavior.state.drag(-delta) },
         enabled = enabled,
         onDragStopped = { velocity ->
             behavior.state.fling(
-                velocity,
+                -velocity,
                 behavior.flingAnimationSpec,
                 behavior.snapAnimationSpec,
             )
