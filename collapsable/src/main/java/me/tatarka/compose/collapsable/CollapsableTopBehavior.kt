@@ -48,6 +48,8 @@ typealias CollapsableBehavior = CollapsableTopBehavior
  * leave your view in a partially collapsed state.
  * @param flingAnimationSpec Animates flinging the view at the end of a drag or nested scroll.
  * Enabled by default, passing null will disable reacting to flings.
+ * @param canScroll a callback used to determine whether scroll events are to be handled by this
+ * behavior.
  */
 @Stable
 class CollapsableTopBehavior(
@@ -55,12 +57,14 @@ class CollapsableTopBehavior(
     internal val snapAnimationSpec: AnimationSpec<Float>?,
     internal val flingAnimationSpec: DecayAnimationSpec<Float>?,
     private val enterAlways: Boolean = false,
+    private val canScroll: () -> Boolean = { true },
 ) {
     /**
      * Pass this connection to [Modifier.nestedScroll] to response to nested scrolling events.
      */
     val nestedScrollConnection = object : NestedScrollConnection {
         override fun onPreScroll(available: Offset, source: NestedScrollSource): Offset {
+            if (!canScroll()) return Offset.Zero
             // Don't intercept if scrolling down.
             if (!enterAlways && available.y > 0f) return Offset.Zero
 
@@ -79,6 +83,7 @@ class CollapsableTopBehavior(
             available: Offset,
             source: NestedScrollSource
         ): Offset {
+            if (!canScroll()) return Offset.Zero
             if (enterAlways) {
                 state.heightOffset += consumed.y
             } else {
@@ -131,13 +136,19 @@ fun rememberCollapsableBehavior(
     snapAnimationSpec: AnimationSpec<Float>? = spring(stiffness = Spring.StiffnessMediumLow),
     flingAnimationSpec: DecayAnimationSpec<Float>? = rememberSplineBasedDecay()
 ): CollapsableTopBehavior {
-    return rememberCollapsableTopBehavior(state, snapAnimationSpec, flingAnimationSpec)
+    return rememberCollapsableTopBehavior(
+        state = state,
+        snapAnimationSpec = snapAnimationSpec,
+        flingAnimationSpec = flingAnimationSpec
+    )
 }
 
 /**
  * Remembers a [CollapsableTopBehavior] that can be used to control collapsing. You should use
  *
  * @param state the [CollapsableState]
+ * @param canScroll a callback used to determine whether scroll events are to be handled by this
+ * behavior.
  * @param snapAnimationSpec animates snapping to the collapsed or expanded state at the end of a
  * drag or nested scroll. Enabled by default, passing null will disable it and
  * leave your view in a partially collapsed state.
@@ -149,6 +160,7 @@ fun rememberCollapsableBehavior(
 @Composable
 fun rememberCollapsableTopBehavior(
     state: CollapsableState = rememberCollapsableState(),
+    canScroll: () -> Boolean = { true },
     snapAnimationSpec: AnimationSpec<Float>? = spring(stiffness = Spring.StiffnessMediumLow),
     flingAnimationSpec: DecayAnimationSpec<Float>? = rememberSplineBasedDecay(),
     enterAlways: Boolean = false,
@@ -158,6 +170,7 @@ fun rememberCollapsableTopBehavior(
         snapAnimationSpec = snapAnimationSpec,
         flingAnimationSpec = flingAnimationSpec,
         enterAlways = enterAlways,
+        canScroll = canScroll,
     )
 }
 
@@ -167,17 +180,18 @@ fun rememberCollapsableTopBehavior(
  * @param behavior the collapsable behavior
  * @param enabled whether or not drag is enabled
  */
-fun Modifier.draggable(behavior: CollapsableTopBehavior, enabled: Boolean = true): Modifier = composed {
-    this.draggable(
-        orientation = Orientation.Vertical,
-        state = rememberDraggableState { delta -> behavior.state.drag(delta) },
-        enabled = enabled,
-        onDragStopped = { velocity ->
-            behavior.state.fling(
-                velocity,
-                behavior.flingAnimationSpec,
-                behavior.snapAnimationSpec,
-            )
-        }
-    )
-}
+fun Modifier.draggable(behavior: CollapsableTopBehavior, enabled: Boolean = true): Modifier =
+    composed {
+        this.draggable(
+            orientation = Orientation.Vertical,
+            state = rememberDraggableState { delta -> behavior.state.drag(delta) },
+            enabled = enabled,
+            onDragStopped = { velocity ->
+                behavior.state.fling(
+                    velocity,
+                    behavior.flingAnimationSpec,
+                    behavior.snapAnimationSpec,
+                )
+            }
+        )
+    }
