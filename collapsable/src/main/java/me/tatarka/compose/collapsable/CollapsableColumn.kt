@@ -18,6 +18,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.isSpecified
+import kotlin.math.abs
 import kotlin.math.roundToInt
 
 /**
@@ -56,6 +57,40 @@ fun CollapsableColumn(
 
 /**
  * A Column where some of the children may collapse. Add [Modifier.collapse] to the children that
+ * should collapse. Takes a [CollapsableBottomBehavior] directly to respond to nested scrolls and
+ * drags.
+ *
+ * example:
+ * ```
+ * val behavior = rememberCollapsableBottomBehavior()
+ * Column(modifier = Modifier.nestedScroll(behavior.nestedScrollConnection)) {
+ *   LazyColumn { ... }
+ *   CollapsableColumn(behavior = behavior) {
+ *     TabRow { ... }
+ *     BottomAppBar(modifier = Modifier.collapse(), actions = { ... })
+ *   }
+ * }
+ * ```
+ *
+ * @param modifier modifiers to be applied to the layout
+ * @param behavior the behavior for nested scrolling and drags
+ * @param content the content of the column
+ **/
+@Composable
+fun CollapsableColumn(
+    behavior: CollapsableBottomBehavior,
+    modifier: Modifier = Modifier,
+    content: @Composable CollapsableColumnScope.() -> Unit
+) {
+    CollapsableColumn(
+        state = behavior.state,
+        modifier = modifier.draggable(behavior),
+        content = content,
+    )
+}
+
+/**
+ * A Column where some of the children may collapse. Add [Modifier.collapse] to the children that
  * should collapse.
  *
  * example:
@@ -67,13 +102,14 @@ fun CollapsableColumn(
  * ```
  *
  * @param modifier modifiers to be applied to the layout
- * @param state the state to manage collapsing the content
+ * @param state the state to manage collapsing the content. Use [rememberCollapseUpState] if you
+ * want to collapse content up and [rememberCollapseDownState] if you want to collapse content down.
  * @param content the content of the column
  **/
 @Composable
 fun CollapsableColumn(
     modifier: Modifier = Modifier,
-    state: CollapsableState = rememberCollapsableState(),
+    state: CollapsableState = rememberCollapseUpState(),
     content: @Composable CollapsableColumnScope.() -> Unit
 ) {
     Layout(
@@ -121,13 +157,18 @@ fun CollapsableColumn(
                 placeables.add(placeable)
             }
 
-            state.heightOffsetLimit = (collapsedHeight - expandedHeight).toFloat()
+            // set the offset limit, respecting already set direction
+            if (state.direction > 0) {
+                state.heightOffsetLimit = (expandedHeight - collapsedHeight).toFloat()
+            } else {
+                state.heightOffsetLimit = (collapsedHeight - expandedHeight).toFloat()
+            }
 
             layout(
                 width = width,
-                height = expandedHeight + state.heightOffset.roundToInt()
+                height = expandedHeight - abs(state.heightOffset).roundToInt()
             ) {
-                var y = 0
+                var y = (-state.heightOffset).coerceAtMost(0f)
                 var collapseLimit = 0
                 for (placeable in placeables) {
                     val collapse = placeable.parentData as? CollapseChildNode

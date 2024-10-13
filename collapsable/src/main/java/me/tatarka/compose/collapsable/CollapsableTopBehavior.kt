@@ -127,7 +127,7 @@ class CollapsableTopBehavior(
     replaceWith = ReplaceWith("rememberCollapsableTopBehavior(state = state, snapAnimationSpec = snapAnimationSpec, flingAnimationSpec = flingAnimationSpec)")
 )
 fun rememberCollapsableBehavior(
-    state: CollapsableState = rememberCollapsableState(),
+    state: CollapsableState = rememberCollapseUpState(),
     snapAnimationSpec: AnimationSpec<Float>? = spring(stiffness = Spring.StiffnessMediumLow),
     flingAnimationSpec: DecayAnimationSpec<Float>? = rememberSplineBasedDecay()
 ): CollapsableTopBehavior {
@@ -148,7 +148,7 @@ fun rememberCollapsableBehavior(
  */
 @Composable
 fun rememberCollapsableTopBehavior(
-    state: CollapsableState = rememberCollapsableState(),
+    state: CollapsableState = rememberCollapseUpState(),
     snapAnimationSpec: AnimationSpec<Float>? = spring(stiffness = Spring.StiffnessMediumLow),
     flingAnimationSpec: DecayAnimationSpec<Float>? = rememberSplineBasedDecay(),
     enterAlways: Boolean = false,

@@ -19,10 +19,11 @@ import androidx.compose.ui.unit.dp
 
 @Composable
 fun Page(
-    topBar: @Composable () -> Unit,
     modifier: Modifier = Modifier,
+    topBar: @Composable () -> Unit = {},
+    bottomBar: @Composable () -> Unit = {},
 ) {
-    Scaffold(topBar = topBar, modifier = modifier) { padding ->
+    Scaffold(topBar = topBar, bottomBar = bottomBar, modifier = modifier) { padding ->
         LazyColumn(
             contentPadding = padding,
             modifier = Modifier.fillMaxSize()
