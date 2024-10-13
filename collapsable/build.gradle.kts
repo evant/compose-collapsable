@@ -11,7 +11,6 @@ android {
 
     defaultConfig {
         minSdk = 21
-
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         consumerProguardFiles("consumer-rules.pro")
     }
@@ -38,6 +37,9 @@ android {
     composeOptions {
         kotlinCompilerExtensionVersion = "1.4.3"
     }
+    testOptions {
+        targetSdk = 34
+    }
     publishing {
         singleVariant("release") {
             withSourcesJar()
@@ -48,9 +50,11 @@ android {
 
 dependencies {
     implementation("androidx.compose.foundation:foundation:1.5.4")
+    debugImplementation("androidx.compose.ui:ui-test-manifest:1.5.4")
     testImplementation("junit:junit:4.13.2")
-    androidTestImplementation("androidx.test.ext:junit:1.1.5")
-    androidTestImplementation("androidx.test.espresso:espresso-core:3.5.1")
+    androidTestImplementation("androidx.test.ext:junit:1.2.1")
+    androidTestImplementation("androidx.compose.ui:ui-test-junit4:1.5.4")
+    androidTestImplementation("com.willowtreeapps.assertk:assertk:0.28.1")
 }
 
 publishing {
