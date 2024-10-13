@@ -27,12 +27,15 @@ import androidx.compose.ui.unit.Velocity
  * leave your view in a partially collapsed state.
  * @param flingAnimationSpec Animates flinging the view at the end of a drag or nested scroll.
  * Enabled by default, passing null will disable reacting to flings.
+ * @param canScroll a callback used to determine whether scroll events are to be handled by this
+ * behavior.
  */
 @Stable
 class CollapsableBottomBehavior(
     val state: CollapsableState,
     internal val snapAnimationSpec: AnimationSpec<Float>?,
     internal val flingAnimationSpec: DecayAnimationSpec<Float>?,
+    private val canScroll: () -> Boolean = { true }
 ) {
     /**
      * Pass this connection to [Modifier.nestedScroll] to response to nested scrolling events.
@@ -43,6 +46,7 @@ class CollapsableBottomBehavior(
             available: Offset,
             source: NestedScrollSource
         ): Offset {
+            if (!canScroll()) return Offset.Zero
             state.drag(consumed.y)
             return Offset.Zero
         }
@@ -64,6 +68,8 @@ class CollapsableBottomBehavior(
  * Remembers a [CollapsableBottomBehavior] that can be used to control collapsing. You should use
  *
  * @param state the [CollapsableState]
+ * @param canScroll a callback used to determine whether scroll events are to be handled by this
+ * behavior.
  * @param snapAnimationSpec animates snapping to the collapsed or expanded state at the end of a
  * drag or nested scroll. Enabled by default, passing null will disable it and
  * leave your view in a partially collapsed state.
@@ -73,6 +79,7 @@ class CollapsableBottomBehavior(
 @Composable
 fun rememberCollapsableBottomBehavior(
     state: CollapsableState = rememberCollapsableState(),
+    canScroll: () -> Boolean = { true },
     snapAnimationSpec: AnimationSpec<Float>? = spring(stiffness = Spring.StiffnessMediumLow),
     flingAnimationSpec: DecayAnimationSpec<Float>? = rememberSplineBasedDecay(),
 ): CollapsableBottomBehavior {
@@ -80,6 +87,7 @@ fun rememberCollapsableBottomBehavior(
         state = state,
         snapAnimationSpec = snapAnimationSpec,
         flingAnimationSpec = flingAnimationSpec,
+        canScroll = canScroll,
     )
 }
 
@@ -89,17 +97,18 @@ fun rememberCollapsableBottomBehavior(
  * @param behavior the collapsable behavior
  * @param enabled whether or not drag is enabled
  */
-fun Modifier.draggable(behavior: CollapsableBottomBehavior, enabled: Boolean = true): Modifier = composed {
-    this.draggable(
-        orientation = Orientation.Vertical,
-        state = rememberDraggableState { delta -> behavior.state.drag(-delta) },
-        enabled = enabled,
-        onDragStopped = { velocity ->
-            behavior.state.fling(
-                -velocity,
-                behavior.flingAnimationSpec,
-                behavior.snapAnimationSpec,
-            )
-        }
-    )
-}
+fun Modifier.draggable(behavior: CollapsableBottomBehavior, enabled: Boolean = true): Modifier =
+    composed {
+        this.draggable(
+            orientation = Orientation.Vertical,
+            state = rememberDraggableState { delta -> behavior.state.drag(-delta) },
+            enabled = enabled,
+            onDragStopped = { velocity ->
+                behavior.state.fling(
+                    -velocity,
+                    behavior.flingAnimationSpec,
+                    behavior.snapAnimationSpec,
+                )
+            }
+        )
+    }
