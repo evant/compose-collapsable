@@ -6,7 +6,7 @@ builds upon logic from the compose material 3 top app bar implementation.
 ## Download
 
 ```kotlin
-implementation("me.tatarka.compose.collapsable:compose-collapsable:0.3.0")
+implementation("me.tatarka.compose.collapsable:compose-collapsable:0.4.0")
 ```
 
 ## Usage
@@ -59,6 +59,10 @@ and to handle dragging on the view use the provided `Modifier.draggable()` modif
 ```kotlin
 modifier = Modifier.draggable(collapsableBehavior)
 ```
+
+### CollapsableBottomBehavior
+
+There is also a `CollapsableBottomBehavior` that's used for collapsing down instead of up. 
 
 ### CollapsableState
 
