@@ -25,8 +25,8 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.tooling.preview.Preview
 import me.tatarka.android.collapsable.ui.theme.CollapsableTheme
 import me.tatarka.compose.collapsable.rememberCollapsableBottomBehavior
+import me.tatarka.compose.collapsable.rememberCollapsableState
 import me.tatarka.compose.collapsable.rememberCollapsableTopBehavior
-import me.tatarka.compose.collapsable.rememberCollapseUpState
 import java.io.Serializable
 
 enum class Examples : Serializable {
@@ -82,7 +82,7 @@ class MainActivity : ComponentActivity() {
                             (CollapsedHeight - ExpandedHeight).toPx()
                         }
                         val collapsableBehavior = rememberCollapsableTopBehavior(
-                            rememberCollapseUpState(initialHeightOffsetLimit = offsetLimit)
+                            rememberCollapsableState(initialHeightOffsetLimit = offsetLimit)
                         )
                         Page(
                             modifier = Modifier.nestedScroll(collapsableBehavior.nestedScrollConnection),

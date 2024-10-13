@@ -33,7 +33,7 @@ import me.tatarka.compose.collapsable.CollapsableState
 import me.tatarka.compose.collapsable.CollapsableTopBehavior
 import me.tatarka.compose.collapsable.draggable
 import me.tatarka.compose.collapsable.rememberCollapsableTopBehavior
-import me.tatarka.compose.collapsable.rememberCollapseUpState
+import me.tatarka.compose.collapsable.rememberCollapsableState
 
 private val LightBlue = Color(91, 206, 250)
 private val LightPink = Color(245, 169, 184)
@@ -168,7 +168,7 @@ fun ParallaxBackgroundTopAppBarPreview() {
             (CollapsedHeight - ExpandedHeight).toPx()
         }
         val collapsableBehavior = rememberCollapsableTopBehavior(
-            rememberCollapseUpState(initialHeightOffsetLimit = offsetLimit)
+            rememberCollapsableState(initialHeightOffsetLimit = offsetLimit)
         )
         Page(
             modifier = Modifier.nestedScroll(collapsableBehavior.nestedScrollConnection),

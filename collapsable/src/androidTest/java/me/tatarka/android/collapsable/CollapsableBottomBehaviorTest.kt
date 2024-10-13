@@ -73,7 +73,7 @@ class CollapsableBottomBehaviorTest {
 
         // Simulate scrolled content.
         rule.runOnIdle {
-            scrollBehavior.state.heightOffset = scrollHeightOffsetPx
+            scrollBehavior.state.heightOffset = -scrollHeightOffsetPx
         }
         rule.waitForIdle()
         rule

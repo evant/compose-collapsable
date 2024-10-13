@@ -58,8 +58,8 @@ import assertk.assertions.isEqualTo
 import me.tatarka.compose.collapsable.CollapsableColumn
 import me.tatarka.compose.collapsable.CollapsableState
 import me.tatarka.compose.collapsable.CollapsableTopBehavior
+import me.tatarka.compose.collapsable.rememberCollapsableState
 import me.tatarka.compose.collapsable.rememberCollapsableTopBehavior
-import me.tatarka.compose.collapsable.rememberCollapseUpState
 import org.junit.Ignore
 import org.junit.Rule
 import org.junit.Test
@@ -312,7 +312,7 @@ class CollapsableTopBehaviorTest {
     fun restoresCollapsableState() {
         val restorationTester = StateRestorationTester(rule)
         var collapsableState: CollapsableState? = null
-        restorationTester.setContent { collapsableState = rememberCollapseUpState() }
+        restorationTester.setContent { collapsableState = rememberCollapsableState() }
 
         rule.runOnIdle {
             collapsableState!!.heightOffsetLimit = -350f
