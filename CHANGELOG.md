@@ -5,6 +5,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
+## [4.0.0] 2024-10-12
+
+### Added
+- Added `CollapableBottomBehavior` for collapsing bottom views.
+- Added option to `CollapsableColumn` to collapse down instead of up. This direction is used if you
+  pass in a `CollapsableBottomBehavior`.
+- Added `canScroll` arguments to both `CollapsableTopBehavior` and `CollapsableBottomBehavior` to
+  optionally disable nested scrolling.
+
+### Fixed
+- Fixed issue where `CollapsableState` may incorrectly be in an intermediate state after a
+  configuration change.
+
 ## [0.3.0] 2024-01-07
 
 ### Fixed
