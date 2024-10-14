@@ -60,7 +60,7 @@ and to handle dragging on the view use the provided `Modifier.draggable()` modif
 modifier = Modifier.draggable(collapsableBehavior)
 ```
 
-### CollapsableBottomBehavior
+### CollapsableBottomBehavior 🥺
 
 There is also a `CollapsableBottomBehavior` that's used for collapsing down instead of up. 
 
